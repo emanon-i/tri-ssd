@@ -1,6 +1,6 @@
 # Tri-SSD Plugin for Claude Code
 
-**Tri-SSD (Tri-Layer Slice Spec Driven)** - AI/LLMコードエージェントを前提とした仕様駆動開発フレームワーク
+AI/LLMコードエージェント向けのシンプルな仕様駆動開発フレームワーク
 
 ## インストール
 
@@ -18,86 +18,75 @@
 # 1. ディレクトリ構造を初期化
 /init-tri-ssd
 
-# 2. L1（ビジョン・要求）を対話形式で作成
-/draft-l1
+# 2. L1（要件）を生成
+/gen-l1
 
-# 3. L2 技術基盤（foundation.md）を生成
-/draft-l2
+# 3. L2（システム構成）を生成
+/gen-l2
 
-# 4. L2 フェーズ定義・機能一覧（phases.md）を生成
-/gen-phases
-
-# 5. 実装ルールのたたき台を生成
-/draft-rules
-
-# 6. L3（機能ドキュメント）を生成
+# 4. L3（フェーズ・機能+受け入れ条件）を生成
 /gen-l3
 
-# 7. L3をレビュー → reviewed に昇格
-/review F-20250125-001
+# 5. フェーズを完了マーキング
+/done PH-xxx
 
-# 8. L3からコード生成
-/gen-code F-20250125-001
-
-# 9. 最終レビュー → implemented に昇格
-/review F-20250125-001
+# 6. コード・テストを生成
+/gen-code PH-xxx
 ```
 
 ## コマンド一覧
 
 | コマンド | 説明 |
-|----------|------|
+|---------|------|
 | `/init-tri-ssd` | ディレクトリ構造を初期化 |
-| `/draft-l1 [ファイルパス]` | L1ドキュメントを作成（引数なし: 対話モード、引数あり: 変換モード） |
-| `/draft-l2 [REQ-xxxx ...]` | L1からL2技術基盤（foundation.md）を生成 |
-| `/gen-phases` | 技術基盤からフェーズ定義・機能一覧を生成 |
-| `/draft-rules [--minimal]` | 実装ルールのたたき台を生成 |
-| `/gen-l3 [F-xxxx ...]` | L2からL3を生成（複数ID指定可） |
-| `/gen-code <F-ID>` | L3からコード・テストを生成 |
-| `/check [--list-ids]` | 整合性チェック（--list-ids: ID一覧出力） |
-| `/review <ファイル>` | AIレビュー + ステータス昇格 |
+| `/gen-l1 [ファイルパス]` | L1要件を生成（対話モード or 既存ドキュメント変換） |
+| `/gen-l2` | L2システム構成を生成 |
+| `/gen-l3` | L3フェーズ（機能+受け入れ条件）を生成 |
+| `/split-l3 <PH-xxx>` | L3フェーズをフォルダ構造に分割 |
+| `/merge-l3 <PH-xxx>` | 分離されたL3フェーズを統合 |
+| `/gen-code <PH-xxx\|F-xxx>` | コード・テストを生成 |
+| `/status` | 進捗確認 |
+| `/done <ファイル\|ID>` | 完了マーキング |
 
 ### 引数記法の凡例
 
 | 記法 | 意味 | 例 |
 |------|------|-----|
-| `<引数>` | 必須引数 | `/gen-code <F-ID>` |
-| `[引数]` | 省略可能な引数 | `/gen-l3 [F-ID]` |
-| `--オプション` | オプションフラグ | `/draft-rules --minimal` |
-| `...` | 複数指定可能 | `/gen-l3 F-001 F-002 ...` |
+| `<引数>` | 必須引数 | `/gen-code <PH-xxx>` |
+| `[引数]` | 省略可能な引数 | `/gen-l1 [ファイルパス]` |
+| `...` | 複数指定可能 | `/gen-l3 PH-001 PH-002 ...` |
 
 ## 三層モデル
 
-| 層 | 名称 | 内容 |
-|----|------|------|
-| L1 | ビジョン・要求 | ビジネス要求・背景・制約 |
-| L2 | 機能設計・技術方針 | 技術基盤・フェーズ・機能一覧・実装ルール |
-| L3 | 機能ドキュメント | ミニ仕様＋タスク＋テスト |
+| レイヤー | 内容 | ファイル |
+|---------|------|----------|
+| L0 | アイディア・ラフメモ（任意） | docs/l0_ideas/ |
+| L1 | 要件（ビジョン・ペルソナ・やりたいこと） | docs/l1_requirements/vision.md |
+| L2 | システム構成（技術スタック・アーキ） | docs/l2_foundation/foundation.md |
+| L3 | フェーズ（機能一覧 + 受け入れ条件） | docs/l3_phases/PH-xxx.md |
 
 ## ディレクトリ構成（生成後）
 
 ```
 docs/
-  l1_vision.md              # L1: ビジョン・要求
-  l2_system/
-    foundation.md           # 技術基盤（用語集・技術方針・アーキテクチャ・NFR）
-    phases.md               # フェーズ定義・機能一覧
-    rules.md                # 実装ルール（コード生成制約）
-  l3_features/
-    F-YYYYMMDD-nnn_xxx.md   # 機能ドキュメント
+  l0_ideas/                     # L0: アイディア・ラフメモ（任意）
+  l1_requirements/
+    vision.md                   # L1: 要件
+  l2_foundation/
+    foundation.md               # L2: システム構成
+  l3_phases/
+    PH-YYYYMMDD-nnn_xxx.md      # L3: フェーズ（機能+受け入れ条件）
 ```
 
 ## ID形式
 
 タイムスタンプベースで衝突を防止:
 
-- `VISION-YYYYMMDD-nnn` - L1ビジョンドキュメント
-- `REQ-YYYYMMDD-nnn` - 要件
-- `F-YYYYMMDD-nnn` - 機能
-- `PH-YYYYMMDD-nnn` - フェーズ
-- `NF-YYYYMMDD-nnn` - 非機能要求
-- `RULES-YYYYMMDD-nnn` - 実装ルール
-- `SP-YYYYMMDD-nnn` - スパイク/PoC
+| プレフィックス | 用途 | 例 |
+|---------------|------|-----|
+| `REQ` | 要件（L1内でインライン定義） | REQ-20250203-001 |
+| `PH` | フェーズ | PH-20250203-001 |
+| `F` | 機能 | F-20250203-001 |
 
 ## ドキュメント
 

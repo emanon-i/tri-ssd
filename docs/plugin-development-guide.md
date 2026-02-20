@@ -66,10 +66,10 @@ allowed-tools: Read, Write, Edit, Glob, Grep
 （過剰設計回避の指示）
 </avoid_over_engineering>
 
-## 目的
-## 入力
+## 概要
+## 引数
 ## 出力フォーマット
-## 処理手順
+## 手順
 ## 完了後の案内
 ```
 
@@ -251,4 +251,4 @@ PREFIX-YYYYMMDD-nnn
 
 ---
 
-*最終更新: 2026-02-03*
+*最終更新: 2026-02-21*

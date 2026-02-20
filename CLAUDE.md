@@ -15,6 +15,8 @@ commands/           # コマンド定義（.md）
 skills/             # スキル定義
   tri-ssd-orchestrator/  # メインスキル
 docs/               # フレームワーク仕様・ガイド
+.claude-plugin/     # プラグイン設定（plugin.json, marketplace.json）
+.claude/rules/      # コンテキスト依存ルール
 ```
 
 ## Tri-SSD レイヤー構造

@@ -4,6 +4,22 @@ Tri-SSD (Tri-Layer Slice Spec Driven) フレームワークの変更履歴です
 
 形式は [Keep a Changelog](https://keepachangelog.com/ja/1.1.0/) に準拠しています。
 
+## [3.2.1] - 2026-02-21
+
+### Fixed
+
+- **README.md を v3.x に全面書き換え**
+  - 旧コマンド名（`/draft-l1`, `/draft-l2`, `/gen-phases` 等）を現行コマンドに更新
+  - 旧ディレクトリ構造（`l1_vision.md`, `l2_system/`, `l3_features/`）を v3.x 形式に修正
+  - 旧ID形式（VISION-xxx, NF-xxx, RULES-xxx, SP-xxx）を REQ/PH/F の3種に整理
+
+- **ドキュメント間の不整合を修正**
+  - CLAUDE.md のディレクトリ構成に `.claude-plugin/`, `.claude/rules/` を追記
+  - `docs/plugin-development-guide.md` のセクション名を実態に合わせて修正（目的→概要、入力→引数、処理手順→手順）
+  - `.claude/rules/skill-development.md` のセクション名を SKILL.md の実態に合わせて修正（Instructions→実行手順、Limitations→制約事項）
+  - SKILL.md の重複セクション（Limitations）を制約事項に統合
+  - `gen-l1.md`, `status.md`, `done.md` に標準の「概要」セクションを追加
+
 ## [3.2.0] - 2026-02-04
 
 ### Changed

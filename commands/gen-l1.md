@@ -18,6 +18,10 @@ Tri-SSD（Tri-Layer Slice Spec Driven）はAI/LLMコードエージェントを�
 ID形式: PREFIX-YYYYMMDD-nnn（REQ, PH, F）
 </tri_ssd_context>
 
+## 概要
+
+L1（要件）ドキュメントを生成する。対話モードまたは既存ドキュメント変換モードで動作。
+
 ## 引数
 
 - `$1` (省略可): 変換元ドキュメントパス

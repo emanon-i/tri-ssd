@@ -26,6 +26,10 @@ ID形式: PREFIX-YYYYMMDD-nnn（REQ, PH, F）
 - 問題がなければ次のステップを提案
 </avoid_over_engineering>
 
+## 概要
+
+Tri-SSD ドキュメントの進捗状況を確認する。
+
 ## 引数
 
 - `$1` (省略可): 確認対象
