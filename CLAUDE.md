@@ -14,7 +14,6 @@ Tri-SSD（Tri-Layer Slice Spec Driven）は、AI/LLMコードエージェント�
 commands/           # コマンド定義（.md）
 skills/             # スキル定義
   tri-ssd-orchestrator/  # メインスキル
-  anti-human-bottleneck/ # 自己検証・自律実行スキル
 docs/               # フレームワーク仕様・ガイド
 .claude-plugin/     # プラグイン設定（plugin.json, marketplace.json）
 .claude/rules/      # コンテキスト依存ルール
