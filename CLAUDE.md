@@ -75,19 +75,6 @@ ID形式: PREFIX-YYYYMMDD-nnn（REQ, PH, F）
 </avoid_over_engineering>
 ```
 
-#### 2.5. 自己検証セットアップの指示
-
-```markdown
-<self_verification>
-コマンド実行の最初に自己検証環境をセットアップする:
-1. プロジェクト設定を検出（package.json / pyproject.toml / go.mod 等）→ テストランナー・リンター・型チェッカー・ビルドコマンドを特定
-2. 利用可能なMCPツールを確認（Chrome MCP, Playwright 等）
-3. 各ステップの完了後は自分で検証する（テスト実行、git diff確認、ブラウザ確認等）
-4. 人間に確認・承認を求めず、自律的に判断して進める
-5. 判断に迷った場合は最善の選択肢を選び、理由を記録して進む
-</self_verification>
-```
-
 #### 3. 出力フォーマット（必須セクション）
 
 - YAMLフロントマター形式の定義
