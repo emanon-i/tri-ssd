@@ -4,6 +4,30 @@ Tri-SSD (Tri-Layer Slice Spec Driven) フレームワークの変更履歴です
 
 形式は [Keep a Changelog](https://keepachangelog.com/ja/1.1.0/) に準拠しています。
 
+## [3.3.0] - 2026-02-27
+
+### Added
+
+- **`anti-human-bottleneck` スキル** - 自己検証・自律実行スキル
+  - エージェントが人間の判断を仰がず自己検証してタスクを進められるようにするスキル
+  - `disable-model-invocation: true` で自動的にコンテキストとしてロードされる
+  - 自己検証手段（テスト、リンター、ブラウザ確認等）の体系的なリファレンス
+  - ヒューマンボトルネック排除のための判断基準とアンチパターン集
+
+- **`<self_verification>` ブロック** - 全9コマンドに自己検証セットアップを追加
+  - コマンド実行の最初にプロジェクトの検証環境を自動検出
+  - 各ステップ完了後の自己検証を指示
+  - `<avoid_over_engineering>` の直後に配置する標準ブロックとして定義
+
+### Changed
+
+- **オーケストレータスキルに自己検証ステップ0を追加**
+  - 実行手順のステップ0として検証環境セットアップを追加
+  - ステップ4のコマンド実行を自律的判断に変更
+
+- **CLAUDE.md に `<self_verification>` ブロックの仕様を追記**
+- **command-development.md に `<self_verification>` ブロックを必須として追加**
+
 ## [3.2.1] - 2026-02-21
 
 ### Fixed
