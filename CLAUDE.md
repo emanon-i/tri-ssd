@@ -6,14 +6,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 このリポジトリは **Tri-SSD Claude Code プラグインの開発リポジトリ** です。
 
-Tri-SSD（Tri-Layer Slice Spec Driven）は、AI/LLMコードエージェントを前提としたシンプルな仕様駆動開発フレームワークです。このリポジトリでは、そのフレームワークを Claude Code で利用するためのプラグイン（コマンド・スキル）を開発しています。
+Tri-SSD（Tri-Layer Slice Spec Driven）は、AI/LLMコードエージェントを前提としたシンプルな仕様駆動開発フレームワークです。このリポジトリでは、そのフレームワークを Claude Code で利用するためのプラグイン（コマンド）を開発しています。
 
 ## ディレクトリ構成
 
 ```
 commands/           # コマンド定義（.md）
-skills/             # スキル定義
-  tri-ssd-orchestrator/  # メインスキル
 docs/               # フレームワーク仕様・ガイド
 .claude-plugin/     # プラグイン設定（plugin.json, marketplace.json）
 .claude/rules/      # コンテキスト依存ルール
@@ -24,7 +22,7 @@ docs/               # フレームワーク仕様・ガイド
 | レイヤー | 内容 | ファイル |
 |---------|------|----------|
 | L0 | アイディア・ラフメモ（任意） | docs/l0_ideas/ |
-| L1 | 要件（ビジョン・ペルソナ・やりたいこと） | docs/l1_requirements/vision.md |
+| L1 | 要件・意思決定（課題・動機・判断の記録） | docs/l1_requirements/vision.md |
 | L2 | システム構成（技術スタック・アーキ） | docs/l2_foundation/foundation.md |
 | L3 | フェーズ（機能一覧 + 受け入れ条件） | docs/l3_phases/PH-xxx.md |
 
@@ -60,7 +58,7 @@ Tri-SSD（Tri-Layer Slice Spec Driven）はAI/LLMコードエージェントを�
 - L2: システム構成（docs/l2_foundation/foundation.md）
 - L3: フェーズ（docs/l3_phases/PH-xxx.md）- 機能+受け入れ条件
 
-ID形式: PREFIX-YYYYMMDD-nnn（REQ, PH, F）
+ID形式: PREFIX-nnnn（REQ, PH, F）
 </tri_ssd_context>
 ```
 
@@ -91,14 +89,14 @@ ID形式: PREFIX-YYYYMMDD-nnn（REQ, PH, F）
 
 引数セクションの直後に配置:
 
-```markdown
+````markdown
 ### 使用例
 
-\`\`\`
+```
 /gen-l1                           # 対話モード
 /gen-l1 docs/existing-spec.md     # 既存ドキュメントを変換
-\`\`\`
 ```
+````
 
 #### 6. エラーケースセクション（推奨）
 
@@ -121,26 +119,7 @@ ID形式: PREFIX-YYYYMMDD-nnn（REQ, PH, F）
 | 処理完了後の報告 | 完了後の案内 |
 | 生成物のフォーマット | 出力フォーマット |
 
-## ドキュメントのフロントマター仕様
-
-Tri-SSD ドキュメント（L1/L2/L3）のフロントマター:
-
-```yaml
----
-status: wip|done
----
-```
-
-### status 遷移
-
-```
-wip → done
-```
-
-- `wip`: 作業中（AI生成直後・書きかけ）
-- `done`: 完了
-
-### ID形式（本文中で使用）
+## ID形式（本文中で使用）
 
 | プレフィックス | 用途 |
 |---------------|------|
@@ -148,19 +127,18 @@ wip → done
 | PH | フェーズ |
 | F | 機能 |
 
-ID形式: `PREFIX-YYYYMMDD-nnn`（例: REQ-20250203-001）
+ID形式: `PREFIX-nnnn`（例: REQ-0001）
 
 ## 開発時の注意
 
 - **レイヤーをスキップしない**: L1/L2なしでL3を生成しない
 - **コマンドは Markdown で定義**: `commands/*.md` に配置
-- **ID形式を守る**: タイムスタンプベース `PREFIX-YYYYMMDD-nnn`
-- **フロントマターを正本とする**: 本文内に同じメタ情報を重複して書かない
+- **ID形式を守る**: 連番 `PREFIX-nnnn`
 - **変更時はバージョン更新を忘れない**: 変更を加えたら `CHANGELOG.md`、`.claude-plugin/plugin.json`、`.claude-plugin/marketplace.json` のバージョンを同期
 
 ## プラグイン開発原則
 
-コマンド/スキルを開発する際は、以下の原則を遵守してください。
+コマンドを開発する際は、以下の原則を遵守してください。
 
 ### 必須ルール
 

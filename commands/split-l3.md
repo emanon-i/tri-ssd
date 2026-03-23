@@ -15,7 +15,7 @@ Tri-SSD（Tri-Layer Slice Spec Driven）はAI/LLMコードエージェントを�
 - L2: システム構成（docs/l2_foundation/foundation.md）
 - L3: フェーズ（docs/l3_phases/PH-xxx.md）- 機能+受け入れ条件
 
-ID形式: PREFIX-YYYYMMDD-nnn（REQ, PH, F）
+ID形式: PREFIX-nnnn（REQ, PH, F）
 </tri_ssd_context>
 
 ## 概要
@@ -38,7 +38,7 @@ ID形式: PREFIX-YYYYMMDD-nnn（REQ, PH, F）
 ## 引数
 
 - `$1`: 分割対象（必須）
-  - PH-ID: `PH-20250204-001`
+  - PH-ID: `PH-0001`
   - ファイルパス: `docs/l3_phases/PH-xxx_name.md`
 
 ## 前提処理
@@ -48,7 +48,6 @@ ID形式: PREFIX-YYYYMMDD-nnn（REQ, PH, F）
    - パス指定: 直接読み込み
 2. フォーマット検証（インライン形式であること）
    - フォルダが既に存在する場合はエラー
-3. `status: done` の場合は警告「完了済みですが分割しますか？」
 
 ---
 
@@ -57,7 +56,6 @@ ID形式: PREFIX-YYYYMMDD-nnn（REQ, PH, F）
 ### Step 1: ファイル解析
 
 入力ファイルから以下を抽出:
-- フロントマター（`status`）
 - タイトル（`# PH-xxx: [フェーズ名]`）
 - 目的セクション
 - 機能セクション（`### F-xxx` で始まる各ブロック）
@@ -69,17 +67,13 @@ ID形式: PREFIX-YYYYMMDD-nnn（REQ, PH, F）
 docs/l3_phases/{元ファイル名から拡張子を除いたもの}/
 ```
 
-例: `PH-20250204-001_mvp.md` → `PH-20250204-001_mvp/`
+例: `PH-0001_mvp.md` → `PH-0001_mvp/`
 
 ### Step 3: `_phase.md` 生成
 
 フェーズ概要ファイルを作成:
 
 ```markdown
----
-status: {元ファイルのstatus}
----
-
 # PH-xxx: [フェーズ名]
 
 ## 目的
@@ -101,10 +95,6 @@ status: {元ファイルのstatus}
 ファイル名: `F-xxx_[kebab-case-機能名].md`
 
 ```markdown
----
-status: {元ファイルのstatus}
----
-
 # F-xxx: [機能名]
 
 **対応REQ**: REQ-xxx
@@ -136,12 +126,6 @@ docs/l3_phases/PH-xxx_[phase-name]/
 
 ### `_phase.md` 形式
 
-```yaml
----
-status: wip
----
-```
-
 ```markdown
 # PH-xxx: [フェーズ名]
 
@@ -158,12 +142,6 @@ status: wip
 ```
 
 ### `F-xxx_[name].md` 形式
-
-```yaml
----
-status: wip
----
-```
 
 ```markdown
 # F-xxx: [機能名]
@@ -195,19 +173,19 @@ status: wip
 ```markdown
 # 分割完了
 
-**入力**: docs/l3_phases/PH-20250204-001_mvp.md
-**出力**: docs/l3_phases/PH-20250204-001_mvp/
+**入力**: docs/l3_phases/PH-0001_mvp.md
+**出力**: docs/l3_phases/PH-0001_mvp/
 
 ## 生成ファイル
 - _phase.md（フェーズ概要）
-- F-20250204-001_login.md
-- F-20250204-002_dashboard.md
-- F-20250204-003_settings.md
+- F-0001_login.md
+- F-0002_dashboard.md
+- F-0003_settings.md
 
 **分割数**: 3機能
 
 ## 次のステップ
 - 各機能ファイルを個別に編集可能
-- `/merge-l3 PH-20250204-001` で元のインライン形式に戻せます
+- `/merge-l3 PH-0001` で元のインライン形式に戻せます
 - `/gen-code F-xxx` で機能単位でコード生成可能
 ```

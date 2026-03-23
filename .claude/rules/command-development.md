@@ -32,7 +32,7 @@ Tri-SSD（Tri-Layer Slice Spec Driven）はAI/LLMコードエージェントを�
 - L2: システム構成（docs/l2_foundation/foundation.md）
 - L3: フェーズ（docs/l3_phases/PH-xxx.md）- 機能+受け入れ条件
 
-ID形式: PREFIX-YYYYMMDD-nnn（REQ, PH, F）
+ID形式: PREFIX-nnnn（REQ, PH, F）
 </tri_ssd_context>
 ```
 
@@ -65,9 +65,8 @@ ID形式: PREFIX-YYYYMMDD-nnn（REQ, PH, F）
    - 省略可能なセクション
 
 2. **ID採番ロジック**（ID生成を行う場合）
-   - 現在日時の取得
    - 既存IDの検索
-   - 連番の決定
+   - 最大番号+1で連番を決定
 
 3. **完了後の案内**
    - 作成ファイルのパス

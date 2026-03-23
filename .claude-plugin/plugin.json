@@ -1,6 +1,6 @@
 {
   "name": "tri-ssd",
-  "version": "3.2.1",
+  "version": "3.6.0",
   "description": "Tri-SSD (Tri-Layer Slice Spec Driven) - 要件→設計→フェーズの三層で仕様を管理する仕様駆動フレームワーク",
   "author": {
     "name": "emanon-i"
@@ -17,8 +17,6 @@
     "./commands/split-l3.md",
     "./commands/merge-l3.md",
     "./commands/gen-code.md",
-    "./commands/status.md",
-    "./commands/done.md"
-  ],
-  "skills": "./skills/"
+    "./commands/archive-l3.md"
+  ]
 }

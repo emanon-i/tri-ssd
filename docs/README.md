@@ -11,7 +11,7 @@ Tri-SSD は、LLM／AIコードエージェントを前提とした仕様駆動�
 | レイヤー | 内容 | ファイル |
 |---------|------|----------|
 | L0 | アイディア・ラフメモ（任意） | docs/l0_ideas/ |
-| L1 | 要件（ビジョン・ペルソナ・やりたいこと） | docs/l1_requirements/vision.md |
+| L1 | 要件・意思決定（課題・動機・判断の記録） | docs/l1_requirements/vision.md |
 | L2 | システム構成（技術スタック・アーキ） | docs/l2_foundation/foundation.md |
 | L3 | フェーズ（機能一覧 + 受け入れ条件） | docs/l3_phases/PH-xxx.md |
 
@@ -35,8 +35,7 @@ Tri-SSD は、LLM／AIコードエージェントを前提とした仕様駆動�
 | /split-l3 | L3フェーズをフォルダ構造に分割 |
 | /merge-l3 | 分離されたL3フェーズを統合 |
 | /gen-code | コード・テストを生成 |
-| /status | 進捗確認 |
-| /done | 完了マーキング |
+| /archive-l3 | 完了したL3フェーズをアーカイブ |
 
 ## 変更履歴
 
