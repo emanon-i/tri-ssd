@@ -1,5 +1,6 @@
 ---
-description: L3フェーズから機能のコードとテストを生成する
+description: L3 フェーズの受け入れ条件からテストと実装コードを TDD で生成し、Lint/テストの検証ループを回して L3 に検証証跡を記録する。
+when_to_use: フェーズや機能を実装したい・コードを生成したい・PH-xxxx / F-xxxx を実装してと言われたとき。gen-l3（フェーズ）の後。
 argument-hint: "<PH-ID|F-ID> - フェーズID または 機能ID（必須）"
 allowed-tools: Read, Write, Edit, Glob, Grep, Bash
 ---
@@ -38,7 +39,7 @@ L3 フェーズドキュメントを入力として、テストコードと実�
 
 ## 引数
 
-- `$1` (必須): 対象ID
+- `$ARGUMENTS` (必須): 対象ID
   - **PH-xxx**: フェーズID → フェーズ内の全機能を順番に実装
   - **F-xxx**: 機能ID → 特定機能のみ実装
 

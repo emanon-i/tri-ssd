@@ -4,6 +4,27 @@ Tri-SSD (Tri-Layer Slice Spec Driven) フレームワークの変更履歴です
 
 形式は [Keep a Changelog](https://keepachangelog.com/ja/1.1.0/) に準拠しています。
 
+## [4.0.0] - 2026-07-03
+
+### Changed
+
+- **コマンド（`commands/`）をスキル（`skills/`）へ全面移行**（破壊的変更・内部構造）
+  - 各コマンド `commands/x.md` を `skills/x/SKILL.md` に再配置。呼び出し名 `/tri-ssd:x` は不変（利用者のコマンド名・ワークフローは変わらない）
+  - `plugin.json` の `commands` 配列を削除（`skills/` は自動検出されるため宣言不要）
+  - 位置引数を skills 準拠の `$ARGUMENTS` に変更（旧 `$1`。skills は位置引数が 0 始まりのため）
+  - ※ v3.6.0 で廃止した「orchestrator スキル」とは別物。今回は全コマンド自体をスキル形式へ移行したもの
+- **全スキルの `description` を「何をするか＋いつ使うか」形式に書き直し、`when_to_use` を追加**
+  - Claude の description ベース自動発火の精度を向上（Skill オーサリングのベストプラクティスに準拠）
+
+### Added
+
+- **決定的処理を同梱スクリプト化**（`skills/*/scripts/*.py`。実行のみでコンテキストに読み込まれず、出力だけがトークンを消費）
+  - `init-tri-ssd`: `init.py` — L0-L3 ディレクトリ + `.gitkeep` 作成（冪等・既存は上書きしない）
+  - `gen-l1` / `gen-l3`: `next_id.py` — 既存 ID 走査 → 連番採番（採番ミス防止）
+  - `split-l3` / `merge-l3`: `split.py` / `merge.py` — インライン⇔フォルダの相互変換（往復可能・チェック状態 `[x]` 保持・改行 LF 固定でOS非依存）
+  - `archive-l3`: `archive.py` — 完了フェーズを `_archive/` へ移動
+  - `python3` が無い環境では `python` / `py`、それも不可なら各 SKILL.md の「フォールバック」手順で手作業
+
 ## [3.6.0] - 2026-03-23
 
 ### Added

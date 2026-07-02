@@ -1,5 +1,6 @@
 ---
-description: L3フェーズをフォルダ構造に分割する
+description: インライン1ファイルの L3 フェーズを、機能ごとのフォルダ構造（_phase.md + F-xxxx_*.md）に分割する。同梱スクリプトで決定的に変換。
+when_to_use: フェーズを機能単位で分けて管理したい・チームで機能ごとに担当を分けたい・split したいと言われたとき。
 argument-hint: <PH-ID | ファイルパス> - 分割対象（必須）
 allowed-tools: Read, Write, Glob, Grep, Bash
 ---
@@ -37,21 +38,32 @@ ID形式: PREFIX-nnnn（REQ, PH, F）
 
 ## 引数
 
-- `$1`: 分割対象（必須）
+- `$ARGUMENTS`: 分割対象（必須）
   - PH-ID: `PH-0001`
   - ファイルパス: `docs/l3_phases/PH-xxx_name.md`
 
 ## 前提処理
 
-1. `$1` で指定された対象ファイルを特定・読み込む
-   - ID指定: Glob で `docs/l3_phases/**/PH-*$1*.md` を検索
+1. `$ARGUMENTS` で指定された対象ファイルを特定・読み込む
+   - ID指定: Glob で `docs/l3_phases/**/PH-*$ARGUMENTS*.md` を検索
    - パス指定: 直接読み込み
 2. フォーマット検証（インライン形式であること）
    - フォルダが既に存在する場合はエラー
 
 ---
 
-## 処理手順
+## 実行
+
+同梱スクリプトで決定的に分割する（チェック状態 `[x]` を保持、`/merge-l3` と往復可能）:
+
+```bash
+python3 "${CLAUDE_SKILL_DIR}/scripts/split.py" PH-0001
+# パス指定も可: python3 "${CLAUDE_SKILL_DIR}/scripts/split.py" docs/l3_phases/PH-0001_mvp.md
+```
+
+`python3` が無ければ `python` / `py`。スクリプトが使えない場合のみ、下記「処理手順（フォールバック）」に従って手作業で分割する。
+
+## 処理手順（フォールバック）
 
 ### Step 1: ファイル解析
 

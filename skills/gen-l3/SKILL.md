@@ -1,7 +1,8 @@
 ---
-description: L3 フェーズ（機能+受け入れ条件）を生成する
+description: L1/L2 から L3 フェーズ（docs/l3_phases/PH-xxxx.md、機能一覧＋受け入れ条件）を生成する。初回は準備フェーズ PH-0000 も自動生成する。
+when_to_use: 実装フェーズ計画・機能分割・受け入れ条件の作成をしたいとき、または PH-xxxx の生成/再生成を求められたとき。gen-l2（L2 構成）の後に使う。
 argument-hint: "[PH-xxx] - 特定フェーズのみ生成（省略時は全フェーズ計画）"
-allowed-tools: Read, Write, Edit, Glob, Grep
+allowed-tools: Read, Write, Edit, Glob, Grep, Bash
 ---
 
 # L3 フェーズ生成コマンド
@@ -37,7 +38,7 @@ L1/L2 をベースに、L3 フェーズドキュメントを生成する。
 
 ## 引数
 
-- `$1` (省略可): 対象フェーズID
+- `$ARGUMENTS` (省略可): 対象フェーズID
   - **省略**: 全体計画（複数フェーズを提案）
   - **PH-xxx**: 特定フェーズのみ生成・更新
 
@@ -318,15 +319,21 @@ docs/l3_phases/
 
 ## ID採番ロジック
 
+ID は同梱スクリプトで採番する（採番ミス防止）:
+
+```bash
+python3 "${CLAUDE_SKILL_DIR}/scripts/next_id.py" PH             # 次のフェーズID
+python3 "${CLAUDE_SKILL_DIR}/scripts/next_id.py" F --count 5    # 機能IDを連続5件
+```
+
+`python3` が無ければ `python` / `py`。スクリプトが使えない場合は手動で（既存ID を Grep で検索 → 最大 + 1 → 4桁ゼロ埋め）。
+
 ### フェーズID（PH）
 - **PH-0000** は準備フェーズとして予約（初回実行時に自動生成）
-- 機能フェーズは **PH-0001** から開始
-1. 既存PH IDを検索（Grepで docs/**/*.md から）
-2. 最大番号 + 1 で新ID生成（4桁ゼロ埋め）
+- 機能フェーズは **PH-0001** から開始（既存 PH が無ければ `next_id.py PH` は自動的に PH-0001 を返す）
 
 ### 機能ID（F）
-1. 既存F IDを検索（Grepで docs/**/*.md から）
-2. 最大番号 + 1 で新ID生成（4桁ゼロ埋め）
+- `next_id.py F --count N` でまとめて採番
 
 ## 出力ファイル
 

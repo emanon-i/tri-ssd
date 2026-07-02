@@ -1,5 +1,6 @@
 ---
-description: Tri-SSD用のディレクトリ構造を初期化する
+description: Tri-SSD の docs/ ディレクトリ構造（L0-L3）を初期化する。プロジェクトで Tri-SSD 仕様駆動開発を始めるときに最初の1回だけ実行する。
+when_to_use: ユーザーが Tri-SSD を始める・セットアップする・初期化したいと言ったとき、または docs/l1_requirements 等のレイヤーディレクトリがまだ存在しないとき。
 argument-hint: なし
 allowed-tools: Read, Write, Bash
 ---
@@ -57,7 +58,17 @@ docs/
 | フェーズ | PH-0001 |
 | 機能 | F-0001 |
 
-## 手順
+## 実行
+
+同梱スクリプトで決定的に作成する（冪等・既存は上書きしない）:
+
+```bash
+python3 "${CLAUDE_SKILL_DIR}/scripts/init.py"
+```
+
+`python3` が無ければ `python` / `py` で実行する。スクリプトが使えない場合のみ、下記「手順（フォールバック）」に従って手作業で同じ構造を作る。
+
+## 手順（フォールバック）
 
 1. **既存確認**: `docs/` が存在するか確認
 2. **ディレクトリ作成**: 存在しない場合のみ作成

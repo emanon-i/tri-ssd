@@ -1,5 +1,6 @@
 ---
-description: 分離されたL3フェーズを1ファイルに統合する
+description: フォルダ構造の L3 フェーズをインライン1ファイルに統合する（split-l3 の逆）。同梱スクリプトで決定的に変換。
+when_to_use: 分割したフェーズを1ファイルにまとめ直したい・merge したいと言われたとき。
 argument-hint: <PH-ID | フォルダパス> - 統合対象（必須）
 allowed-tools: Read, Write, Glob, Grep, Bash
 ---
@@ -36,14 +37,14 @@ ID形式: PREFIX-nnnn（REQ, PH, F）
 
 ## 引数
 
-- `$1`: 統合対象（必須）
+- `$ARGUMENTS`: 統合対象（必須）
   - PH-ID: `PH-0001`
   - フォルダパス: `docs/l3_phases/PH-xxx_name/`
 
 ## 前提処理
 
-1. `$1` で指定された対象フォルダを特定
-   - ID指定: Glob で `docs/l3_phases/**/PH-*$1*/` を検索
+1. `$ARGUMENTS` で指定された対象フォルダを特定
+   - ID指定: Glob で `docs/l3_phases/**/PH-*$ARGUMENTS*/` を検索
    - パス指定: 直接参照
 2. フォーマット検証（分離形式であること）
    - `_phase.md` の存在確認
@@ -52,7 +53,18 @@ ID形式: PREFIX-nnnn（REQ, PH, F）
 
 ---
 
-## 処理手順
+## 実行
+
+同梱スクリプトで決定的に統合する（チェック状態 `[x]` を保持、`/split-l3` と往復可能）:
+
+```bash
+python3 "${CLAUDE_SKILL_DIR}/scripts/merge.py" PH-0001
+# パス指定も可: python3 "${CLAUDE_SKILL_DIR}/scripts/merge.py" docs/l3_phases/PH-0001_mvp/
+```
+
+`python3` が無ければ `python` / `py`。スクリプトが使えない場合のみ、下記「処理手順（フォールバック）」に従って手作業で統合する。
+
+## 処理手順（フォールバック）
 
 ### Step 1: フォルダ解析
 

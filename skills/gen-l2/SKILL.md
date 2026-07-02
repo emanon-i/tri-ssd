@@ -1,5 +1,6 @@
 ---
-description: L2 システム構成（foundation.md）を生成する
+description: L1 要件から L2 システム構成（docs/l2_foundation/foundation.md、技術スタック・アーキテクチャ・テスト戦略）を対話的に生成する。
+when_to_use: 技術選定・アーキテクチャ設計・foundation を作りたいとき。gen-l1（L1 要件）の後、gen-l3（フェーズ）の前に使う。
 argument-hint: なし
 allowed-tools: Read, Write, Edit, Glob, Grep, WebSearch
 ---
