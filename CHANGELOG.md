@@ -4,6 +4,91 @@ Tri-SSD (Tri-Layer Slice Spec Driven) フレームワークの変更履歴です
 
 形式は [Keep a Changelog](https://keepachangelog.com/ja/1.1.0/) に準拠しています。
 
+## [5.0.0] - 2026-07-03
+
+### Added
+
+- **スキル4件を新設**（8→12スキル）
+  - `/next-tri-ssd` — 工程のオーケストレーター。docs/ の状態から現在地を決定的に判定し、次の一手を理由付きで提案・実行（ワークフローの順序を覚えなくてよい）
+  - `/gen-doc` — 配置のオーケストレーター。書きたい情報を layer-rules の判定で振り分け（画面→gen-interface / データ→gen-data へ委譲。機能契約 `features/`・教訓 `lessons.md`・検証実証ログ `validation/`・用語集は自ら生成）
+  - `/gen-interface` — L2 インターフェース設計の深掘り → `interface.md`（画面一覧・画面遷移図（Mermaid stateDiagram-v2、ユーザー状態含む）・主要導線（操作→結果→応答/待ち時間フィードバック））
+  - `/gen-data` — L2 データ設計の深掘り → `data.md`（概念モデル（erDiagram）・データライフサイクル（発生・更新頻度・増加ペース・保持/ローテーション・削除）・整合性の判断基準。カラム定義は書かない＝正は実装コード）
+- **`/review-tri-ssd` スキルを新設** — 整合性検証と進捗サマリ（読み取り専用）
+  - ID 整合性は `scripts/validate_ids.py` で機械的に検証（dangling 参照・重複定義・status と検証記録の突合）
+  - 要件の網羅性・仕様と実装の乖離を読み合わせで確認。ドキュメント衛生（未解決の分離ポインタ・300行超過・未振り分けの印）も検査
+- **規約文書2件を新設**（SSOT の分離: 配置 = layer-rules / 書き方 = writing-rules）
+  - `docs/layer-rules.md` — 配置決定表・判定フロー（Q0〜Q4）・曖昧ケースの裁定・ファイル分割ルール・適正粒度基準。判定軸は「更新トリガー」（L1=実現手段を決めなくても真、L2=フェーズ完了後も真、L3=完了で腐る）
+  - `docs/writing-rules.md` — 文章原則（1文1事実・修飾語禁止）・構造化（表>箇条書き>散文）・図の Mermaid 統一・機械契約マーカー表（TODO / `（未確認…）` 印 / `検証:` 行 / `depends:`）
+- **共有スクリプト基盤**（プラグインルート `scripts/`）
+  - `next_id.py` を一本化（gen-l1 / gen-l3 の重複コピーを削除。`_archive/` 含む走査＝永久欠番）
+  - `validate_ids.py` — ID 整合性検証と進捗サマリ（フォルダ形式 PH・L2 複数ファイル対応）
+  - `doc_graph.py` — ID 参照から文書依存グラフを自動導出（維持コストゼロ）。`--focus <ID>` が「着手前に読むべき最小の文書集合」を返し、gen-code の段階的注入を決定的にする。任意 frontmatter `depends:` で文書間依存を補完可能
+- **PH-0000 に「技術前提の事実検証（スパイク）」を追加**（環境構築5機能に続く第6の機能）
+  - 計画全体が依存する未確認の前提（外部 API の実在・レート制限、核心処理の実現可否、ライブラリ制約）を実装前に最小の検証コード・実測で確認。前提の不成立も `PASS（前提不成立を確認、日付）` として成果扱い
+  - 印のライフサイクル: gen-l2 が `（未確認・要検証）` 印を付与 → gen-l3 が検証場所を確定（PH-0000 スパイク or 該当フェーズの事前確認）→ gen-code が判明した事実を「確認済みの前提」へ昇格して印を外す
+- **L1/L2/L3 テンプレートに YAML frontmatter を導入**
+  - L1: `layer` / `product_type`（gui|cli|api|library|batch|data|doc|other）/ `updated`
+  - L2: `layer` / `updated` / `depends`（任意）。L3: `id` / `status`（planned|in_progress|done）/ `requires` / `updated`
+- **テンプレート新セクション**（いずれも任意・追加式で後方互換）
+  - L1: 「原則」・「体験要件」（product_type 別）・「やらないこと」
+  - L2: 「インターフェース仕様」・「確認済みの前提」・「設計判断の記録」・「データモデル」（erDiagram 例付き）・「エラー処理方針」・「運用」（省略可・記入判断基準付き）
+  - L3: 「事前確認」（作業のみ。結果は L2 へ）・「検証記録」（事後証跡）・「完了サマリ」（archive 時に記入）
+- **`/gen-code` を実装完了の門番に強化**
+  - Phase 0（clarify）: 未解決 TODO・矛盾・検証手段の不足がある場合のみ質問（なければ質問ゼロ）。「事前確認」節の未チェック項目はここで実行
+  - 機能契約の「やらないこと」を実装時の契約として遵守。L2 分離ファイルは依存グラフで関連分のみ読む
+- **`/archive-l3` をフェーズ完了処理に拡張** — ゲート（全 F PASS 確認）・CHANGELOG 自動追記（出所は L3 完了サマリに一本化）・知見還元の提案（L1/L2/lessons.md へ、承認制）
+- **`/init-tri-ssd` が docs/README.md（情報の在り処マップ）を生成**するように拡張
+
+### Changed
+
+- **L2 を複数ファイル構成に**（foundation.md をハブに、関心領域ごとのサブ文書を規模で分離: interface.md / data.md / features/ / validation/ / lessons.md / glossary.md。分離時は1行ポインタに置換）
+- **`/split-l3` と `/merge-l3` を `/reshape-l3` に統合**（破壊的変更）
+  - 1能力（インライン⇔フォルダの往復変換）・同一更新トリガーのため統合。変換方向は対象の形式から自動判定
+  - split.py / merge.py を原文の行を保持する方式に改修（phase-template 準拠なら往復 diff ゼロを実測確認）
+- **gen-l1 / gen-l2 / gen-l3 の出力テンプレートを「テンプレート＋記入判断基準」として `references/` に外出し**（段階的開示。本文には必須構造の要点と参照指示のみ）
+- **既存8スキルの description / when_to_use の発火語彙を増強**（口語トリガー・英語表現・「〜のときは別スキル」の区別。新設4スキルは初版から適用）
+- **図を Mermaid に統一**（構成図=flowchart / 遷移=stateDiagram-v2 / ER=erDiagram / 時系列=sequenceDiagram。ASCII 図を廃止）
+- 全スキルの `<tri_ssd_context>` を3行の共通ブロックに縮小（レイヤー詳細の複製をやめ layer-rules.md への参照に置換）
+- 検証結果の記録先を AC 行への追記から「検証記録」セクションに変更（Plan と事後証跡の分離）
+- `.claude/rules/command-development.md` → `skill-development.md`（globs 修正。XML タグによる強指示の使い分けを明文化）
+- CLAUDE.md / docs/plugin-development-guide.md を skills 形式の実態に全面改訂。三層モデル表の重複を解消（正は layer-rules.md）
+- **内部品質**: リリース前に実行エージェント視点の多段レビュー（Codex＋サブエージェント計7体・3巡）と記載品質レビューを実施し、スキル間の受け渡し契約の矛盾（フォルダ形式の片側契約・初回実行判定・印のライフサイクル・完了条件の自己矛盾など30件超）と文章の不揃いを解消
+
+### Fixed
+
+- `.gitignore` に `__pycache__/`・`*.pyc` を追加し、混入していた `.pyc` を削除
+- 引数を取らないスキルの `argument-hint: なし` を削除（規約は「引数がある場合」のみ記載）
+- split / merge（v3 由来）の往復変換で見出し直後の空行が失われるバグを修正（`\s*$` が改行を跨いで消費していた）
+
+### Migration（v4.0.0 からの移行）
+
+| 旧 | 新 |
+|----|----|
+| `/split-l3 PH-xxxx` | `/reshape-l3 PH-xxxx`（方向は自動判定） |
+| `/merge-l3 PH-xxxx` | `/reshape-l3 PH-xxxx`（同上） |
+| 既存の vision.md / foundation.md / PH ファイル | そのまま有効（frontmatter・新セクションはすべて任意・追加式） |
+
+## [4.0.0] - 2026-07-03
+
+### Changed
+
+- **コマンド（`commands/`）をスキル（`skills/`）へ全面移行**（破壊的変更・内部構造）
+  - 各コマンド `commands/x.md` を `skills/x/SKILL.md` に再配置。呼び出し名 `/tri-ssd:x` は不変（利用者のコマンド名・ワークフローは変わらない）
+  - `plugin.json` の `commands` 配列を削除（`skills/` は自動検出されるため宣言不要）
+  - 位置引数を skills 準拠の `$ARGUMENTS` に変更（旧 `$1`。skills は位置引数が 0 始まりのため）
+  - ※ v3.6.0 で廃止した「orchestrator スキル」とは別物。今回は全コマンド自体をスキル形式へ移行したもの
+- **全スキルの `description` を「何をするか＋いつ使うか」形式に書き直し、`when_to_use` を追加**
+  - Claude の description ベース自動発火の精度を向上（Skill オーサリングのベストプラクティスに準拠）
+
+### Added
+
+- **決定的処理を同梱スクリプト化**（`skills/*/scripts/*.py`。実行のみでコンテキストに読み込まれず、出力だけがトークンを消費）
+  - `init-tri-ssd`: `init.py` — L0-L3 ディレクトリ + `.gitkeep` 作成（冪等・既存は上書きしない）
+  - `gen-l1` / `gen-l3`: `next_id.py` — 既存 ID 走査 → 連番採番（採番ミス防止）
+  - `split-l3` / `merge-l3`: `split.py` / `merge.py` — インライン⇔フォルダの相互変換（往復可能・チェック状態 `[x]` 保持・改行 LF 固定でOS非依存）
+  - `archive-l3`: `archive.py` — 完了フェーズを `_archive/` へ移動
+  - `python3` が無い環境では `python` / `py`、それも不可なら各 SKILL.md の「フォールバック」手順で手作業
+
 ## [3.6.0] - 2026-03-23
 
 ### Added

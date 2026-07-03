@@ -1,4 +1,9 @@
 {
+  "permissions": {
+    "allow": [
+      "Bash(git checkout:*)"
+    ]
+  },
   "hooks": {
     "PostToolUse": [
       {
@@ -12,9 +17,7 @@
       }
     ]
   },
-  "permissions": {
-    "allow": [
-      "Bash(git checkout:*)"
-    ]
+  "enabledPlugins": {
+    "plugin-dev@claude-code-plugins": true
   }
 }

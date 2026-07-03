@@ -1,6 +1,6 @@
 {
   "name": "tri-ssd",
-  "version": "3.6.0",
+  "version": "5.0.0",
   "description": "Tri-SSD (Tri-Layer Slice Spec Driven) - 要件→設計→フェーズの三層で仕様を管理する仕様駆動フレームワーク",
   "author": {
     "name": "emanon-i"
@@ -8,15 +8,5 @@
   "homepage": "https://github.com/emanon-i/tri-ssd",
   "repository": "https://github.com/emanon-i/tri-ssd",
   "license": "MIT",
-  "keywords": ["tri-ssd", "specification-driven", "development", "framework", "ai", "llm"],
-  "commands": [
-    "./commands/init-tri-ssd.md",
-    "./commands/gen-l1.md",
-    "./commands/gen-l2.md",
-    "./commands/gen-l3.md",
-    "./commands/split-l3.md",
-    "./commands/merge-l3.md",
-    "./commands/gen-code.md",
-    "./commands/archive-l3.md"
-  ]
+  "keywords": ["tri-ssd", "specification-driven", "development", "framework", "ai", "llm"]
 }
