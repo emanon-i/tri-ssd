@@ -5,7 +5,7 @@ argument-hint: "[PH-xxxx] - 対象フェーズ（省略時は全体）"
 allowed-tools: Read, Glob, Grep, Bash
 ---
 
-# 整合性レビューコマンド
+# 整合性レビュースキル
 
 <tri_ssd_context>
 Tri-SSD: L0(任意メモ docs/l0_ideas/) → L1(要件 docs/l1_requirements/vision.md) → L2(構成 docs/l2_foundation/foundation.md) → L3(フェーズ docs/l3_phases/PH-xxxx.md)。
@@ -15,7 +15,7 @@ ID形式: PREFIX-nnnn（REQ, PH, F）。番号は再利用しない（永久欠�
 
 ## 概要
 
-Tri-SSD ドキュメント群の整合性検証と進捗把握を行う読み取り専用のレビュー。ドキュメントの修正はしない（発見した問題と修正案の提示まで）。
+Tri-SSD ドキュメント群の整合性を検証し、進捗を報告する読み取り専用のレビュー。ドキュメントの修正はしない（発見した問題と修正案の提示まで）。
 
 | 検証 | 手段 | 内容 |
 |------|------|------|
@@ -57,6 +57,8 @@ python3 "${CLAUDE_SKILL_DIR}/../../scripts/validate_ids.py"
 
 `python3` が使えない環境（Windows の python3 は Store スタブの場合がある）では `python` / `py`。スクリプトが使えない場合は Grep で `REQ-\d{4}` / `F-\d{4}` / `PH-\d{4}` を検索し、参照と定義（見出し行）を手動で突合する。
 
+文書間の依存関係を俯瞰したい場合は `python3 "${CLAUDE_SKILL_DIR}/../../scripts/doc_graph.py" --format mermaid`（全体図）や `--focus <ID>`（特定 ID の近傍）が使える。
+
 検出対象:
 - **dangling 参照**: 定義が存在しない ID への参照（例: 削除済み REQ を指す「対応REQ」）
 - **重複定義**: 同一 ID が複数箇所で定義されている
@@ -76,13 +78,13 @@ python3 "${CLAUDE_SKILL_DIR}/../../scripts/validate_ids.py"
 3. L2 の「確認済みの前提」と実装が食い違っていそうな箇所があれば指摘（深追いはしない）
 4. L2 の分離ファイル（`docs/l2_foundation/interface.md` / `data.md`。存在する場合）も乖離チェックの対象に含める（画面 ID・エンティティと実装の対応）
 
-### Step 3.5: ドキュメント衛生（軽く）
+### Step 4: ドキュメント衛生（軽く）
 
 1. **未解決の分離ポインタ**: foundation.md に「（未作成）」のまま残っている `interface.md` / `data.md` への骨子ポインタがあれば報告（→ `/gen-interface` / `/gen-data` を案内）
 2. **サイズ超過**: docs/ 配下で300行を超えるファイルを報告し、layer-rules のファイル分割ルール（トリガー⑤）に基づく分割を提案
 3. **検証されない印**: L2 に `（未確認・要検証）` のまま（検証場所未確定）の印が残っていれば報告（→ `/gen-l3` で振り分け）
 
-### Step 4: レポート出力
+### Step 5: レポート出力
 
 ```markdown
 # Tri-SSD 整合性レビュー結果

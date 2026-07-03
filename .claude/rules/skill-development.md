@@ -10,7 +10,7 @@ globs: skills/**/*.md
 
 ```yaml
 ---
-name: skill-name                       # 省略時はディレクトリ名
+name: skill-name                       # 原則書かない（呼び出し名はディレクトリ名で決まる）
 description: 何をするか（1〜2文、必須）
 when_to_use: いつ使うか。自然な発火フレーズを列挙（推奨）
 argument-hint: "[引数] - 説明"          # 引数がある場合
@@ -29,7 +29,7 @@ allowed-tools: Read, Write, Edit, Glob, Grep  # 事前承認するツールの�
 
 ## 共通コンテキストブロック
 
-すべてのスキルに含める（4行版・これ以上増やさない）:
+すべてのスキルに含める（規定文面のまま。これ以上増やさない）:
 
 ```markdown
 <tri_ssd_context>

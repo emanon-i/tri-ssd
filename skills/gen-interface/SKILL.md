@@ -4,7 +4,7 @@ when_to_use: 画面設計したい・画面遷移を決めたい・UI/UX を設�
 allowed-tools: Read, Write, Edit, Glob, Grep
 ---
 
-# インターフェース設計コマンド
+# インターフェース設計スキル
 
 <tri_ssd_context>
 Tri-SSD: L0(任意メモ docs/l0_ideas/) → L1(要件 docs/l1_requirements/vision.md) → L2(構成 docs/l2_foundation/foundation.md) → L3(フェーズ docs/l3_phases/PH-xxxx.md)。
@@ -55,6 +55,7 @@ foundation.md §3 のインライン記述では足りなくなった規模（�
 ---
 layer: L2
 updated: YYYY-MM-DD
+depends: []              # 任意: ID 参照で表せない依存（例: [l2_foundation/data.md]）
 ---
 ```
 

@@ -4,7 +4,7 @@ when_to_use: データ設計したい・ER図/データモデルを作りたい�
 allowed-tools: Read, Write, Edit, Glob, Grep
 ---
 
-# データ設計コマンド
+# データ設計スキル
 
 <tri_ssd_context>
 Tri-SSD: L0(任意メモ docs/l0_ideas/) → L1(要件 docs/l1_requirements/vision.md) → L2(構成 docs/l2_foundation/foundation.md) → L3(フェーズ docs/l3_phases/PH-xxxx.md)。
@@ -55,6 +55,7 @@ foundation.md §2.4 のインライン記述では足りなくなった規模（
 ---
 layer: L2
 updated: YYYY-MM-DD
+depends: []              # 任意: ID 参照で表せない依存（例: [l2_foundation/interface.md]）
 ---
 ```
 

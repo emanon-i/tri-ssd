@@ -42,16 +42,17 @@
 - 同じ規約・テンプレート・ロジックを複数スキルに複製しない
 - レイヤー配置の判断規約 → `docs/layer-rules.md` が正
 - ID採番・整合性検証 → プラグインルート `scripts/` が正（各スキルからは `${CLAUDE_SKILL_DIR}/../../scripts/` で参照）
-  - パス変数は `${CLAUDE_SKILL_DIR}` を使う（skills 公式の置換変数。プラグインはディレクトリ全体がキャッシュへコピーされるため、プラグイン内の相対参照は壊れない）。`${CLAUDE_PLUGIN_ROOT}` はスキル本文での展開が公式に保証されていないため使わない
+  - パス変数は `${CLAUDE_SKILL_DIR}` を使う（skills 公式の置換変数。プラグインは全体がキャッシュへコピーされるため内部の相対参照は壊れない）
+  - `${CLAUDE_PLUGIN_ROOT}` は使わない（スキル本文での展開が公式に保証されていない）
 - 索引・ナビ・リンクは複製してよい（正規の事実そのものは複製しない）
 
 ---
 
 ## 2. スキル設計パターン
 
-### 2.1 必須構造
+### 2.1 推奨構造
 
-すべてのスキルは `skills/<name>/SKILL.md` に以下の構造を持つ:
+必須セクションは `.claude/rules/skill-development.md` の3つ（出力フォーマット定義・ID採番・完了後の案内）。標準的なスキルは以下の構造を持つ（引数なしのスキルは「引数」節に「引数なし」と書く）:
 
 ```markdown
 ---
@@ -64,7 +65,7 @@ allowed-tools: Read, Write, Edit, Glob, Grep
 # スキル名
 
 <tri_ssd_context>
-（4行版の共通コンテキスト。skill-development.md 参照）
+（共通コンテキストブロック。skill-development.md 参照）
 </tri_ssd_context>
 
 <avoid_over_engineering>
@@ -83,7 +84,7 @@ allowed-tools: Read, Write, Edit, Glob, Grep
 
 - `description` + `when_to_use` は合計**1,536文字以内**（超過分はトランケートされ発火精度が落ちる）
 - `allowed-tools` は「制限」ではなく「事前承認」。確実に使うツールのみ列挙
-- スキル呼び出し名は基本的に**ディレクトリ名**で決まる（`name` ではない）
+- スキル呼び出し名は**ディレクトリ名**で決まる（`name` は原則書かない）
 
 ### 2.3 スクリプト同梱の作法
 

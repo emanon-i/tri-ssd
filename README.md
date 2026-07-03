@@ -33,7 +33,7 @@ AI/LLMコードエージェント向けのシンプルな仕様駆動開発フ�
 # 6. 整合性・進捗を確認（任意）
 /review-tri-ssd
 
-# 7. 完了したフェーズの完了処理（ゲート確認 → CHANGELOG → 知見還元 → アーカイブ）
+# 7. フェーズの完了処理（ゲート確認 → CHANGELOG → 知見還元 → アーカイブ）
 /archive-l3 PH-xxxx
 ```
 
@@ -49,7 +49,8 @@ AI/LLMコードエージェント向けのシンプルな仕様駆動開発フ�
 | `/gen-l2` | L2システム構成を生成 |
 | `/gen-interface` | L2インターフェース設計を深掘り（画面一覧・遷移図・導線 → interface.md） |
 | `/gen-data` | L2データ設計を深掘り（概念モデル・ライフサイクル → data.md） |
-| `/gen-l3` | L3フェーズ（機能+受け入れ条件）を生成 |
+| `/gen-doc [書きたい内容]` | 書きたい情報を正しい置き場へ振り分け（機能契約・教訓・検証ログ等） |
+| `/gen-l3 [PH-xxxx]` | L3フェーズ（機能+受け入れ条件）を生成 |
 | `/reshape-l3 <PH-xxxx>` | L3フェーズの形式を相互変換（インライン⇔フォルダ） |
 | `/gen-code <PH-xxxx\|F-xxxx>` | コード・テストを生成し、検証記録を残す |
 | `/review-tri-ssd [PH-xxxx]` | ID整合性・要件網羅・進捗を検証 |
@@ -61,14 +62,13 @@ AI/LLMコードエージェント向けのシンプルな仕様駆動開発フ�
 |------|------|-----|
 | `<引数>` | 必須引数 | `/gen-code <PH-xxxx>` |
 | `[引数]` | 省略可能な引数 | `/gen-l1 [ファイルパス]` |
-| `...` | 複数指定可能 | `/gen-l3 PH-001 PH-002 ...` |
 
 ## 三層モデル
 
 | レイヤー | 内容 | ファイル |
 |---------|------|----------|
 | L0 | アイディア・ラフメモ（任意） | docs/l0_ideas/ |
-| L1 | 要件・意思決定（課題・動機・判断の記録） | docs/l1_requirements/vision.md |
+| L1 | 要件（なぜ作るか・何ができれば成功か） | docs/l1_requirements/vision.md |
 | L2 | システム構成（技術スタック・アーキ） | docs/l2_foundation/foundation.md |
 | L3 | フェーズ（機能一覧 + 受け入れ条件） | docs/l3_phases/PH-xxxx.md |
 
@@ -78,13 +78,14 @@ AI/LLMコードエージェント向けのシンプルな仕様駆動開発フ�
 
 ```
 docs/
+  README.md                     # 情報の在り処マップ
   l0_ideas/                     # L0: アイディア・ラフメモ（任意）
   l1_requirements/
     vision.md                   # L1: 要件
   l2_foundation/
     foundation.md               # L2: システム構成
   l3_phases/
-    PH-nnnn_xxx.md               # L3: フェーズ（機能+受け入れ条件）
+    PH-nnnn_*.md                # L3: フェーズ（機能+受け入れ条件）
 ```
 
 ## ID形式

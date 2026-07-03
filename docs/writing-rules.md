@@ -51,6 +51,10 @@ Tri-SSD が生成するドキュメント（vision.md / foundation.md / interfac
 | 検証手段 | AC 直下の `- 検証:` サブ行 | gen-code が検証方法を決定 |
 | YAML frontmatter | 各テンプレートのキー定義どおり | validate_ids / gen-code / archive-l3 |
 | ID | `PREFIX-nnnn`（4桁連番・永久欠番） | validate_ids・全スキル |
+| 依存の明示（任意） | frontmatter `depends: [REQ-0003, l2_foundation/data.md]`（ID 参照で表せない文書間依存のみ） | doc_graph.py が依存マップに合成 |
+
+文書間の依存関係は **ID 参照から自動導出**される（`scripts/doc_graph.py`）。本文中で関連する REQ/PH/F を ID で参照すれば、それ自体がグラフのエッジになる。
+プレースホルダ表記: 書式の定義には `nnnn`（桁数を示す）、文中の実例の伏せ字には `xxxx` を使う。
 
 ## 人間可読性との両立
 

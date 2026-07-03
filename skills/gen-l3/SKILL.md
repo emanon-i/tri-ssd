@@ -5,7 +5,7 @@ argument-hint: "[PH-xxxx] - 特定フェーズのみ生成（省略時は全フ�
 allowed-tools: Read, Write, Edit, Glob, Grep, Bash
 ---
 
-# L3 フェーズ生成コマンド
+# L3 フェーズ生成スキル
 
 <tri_ssd_context>
 Tri-SSD: L0(任意メモ docs/l0_ideas/) → L1(要件 docs/l1_requirements/vision.md) → L2(構成 docs/l2_foundation/foundation.md) → L3(フェーズ docs/l3_phases/PH-xxxx.md)。
@@ -53,7 +53,8 @@ L1/L2 をベースに、L3 フェーズドキュメントを生成する。
 4. **初回実行判定**: 以下の**両方**を満たす場合のみ初回実行モード
    - アクティブな PH が0件: Glob `docs/l3_phases/PH-*.md` と `docs/l3_phases/PH-*/_phase.md`（フォルダ形式）がいずれも0件（`_archive/` 除外）
    - `docs/l3_phases/_archive/` にも PH が存在しない
-   - **全フェーズがアーカイブ済みのケースは初回ではない**: PH-0000 を再生成せず（重複定義になる）、次期フェーズを `next_id.py PH` の続き番号で計画する
+
+   全フェーズがアーカイブ済みのケースは**初回ではない**。PH-0000 を再生成せず（重複定義になる）、次期フェーズを `next_id.py PH` の続き番号で計画する。
 
 ## 初回実行: 準備フェーズ (PH-0000)
 

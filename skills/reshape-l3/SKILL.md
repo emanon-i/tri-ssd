@@ -5,7 +5,7 @@ argument-hint: "<PH-ID | パス> - 変換対象（必須）。現在の形式か
 allowed-tools: Read, Write, Glob, Grep, Bash
 ---
 
-# L3 フェーズ形式変換コマンド
+# L3 フェーズ形式変換スキル
 
 <tri_ssd_context>
 Tri-SSD: L0(任意メモ docs/l0_ideas/) → L1(要件 docs/l1_requirements/vision.md) → L2(構成 docs/l2_foundation/foundation.md) → L3(フェーズ docs/l3_phases/PH-xxxx.md)。
@@ -28,9 +28,10 @@ L3 フェーズの2つの形式を相互に変換する（split⇔merge の往�
 
 <avoid_over_engineering>
 - 機能が1〜2個しかないフェーズは分割する必要がない（警告は出さない）
-- 変換は往復可能（split → merge で元に戻る）。phase-template 準拠の書式なら往復 diff ゼロ。テンプレから逸脱した書式は機能一覧のみテンプレ書式に正規化され、F の並びはファイル名（F-ID）順に揃う
-- チェック状態（`[x]`）・frontmatter・検証記録などの全セクションを保持する
+- 変換で内容を書き換えない（形式の変換のみ）
 </avoid_over_engineering>
+
+変換の保証: チェック状態（`[x]`）・frontmatter・検証記録などの全セクションを保持し、往復可能（split → merge で元に戻る）。phase-template 準拠の書式なら往復 diff ゼロ。逸脱した書式は機能一覧のみテンプレ書式に正規化され、F の並びはファイル名（F-ID）順に揃う。
 
 ## 引数
 
@@ -101,6 +102,16 @@ F ファイルの `## 受け入れ条件` は `**受け入れ条件**:` に戻�
 
 ---
 
+## 完了後の案内
+
+- 変換方向（split / merge）と入出力パスを報告
+- 機能数・チェック状態（merge 時）を報告
+- 次のステップ:
+  - split 後: 各機能ファイルを個別に編集可能。`/gen-code F-xxxx` で機能単位のコード生成、`/reshape-l3 PH-xxxx` で元に戻せる
+  - merge 後: `/gen-code PH-xxxx` でコード生成、実装完了後は `/archive-l3 PH-xxxx`
+
+---
+
 ## エラーケース
 
 | ケース | 対応 |
@@ -110,13 +121,3 @@ F ファイルの `## 受け入れ条件` は `**受け入れ条件**:` に戻�
 | merge 対象に同名ファイルが存在 | エラー: 「同名ファイルが存在します。手動で確認してください」 |
 | 機能セクション（### F-xxxx）がない | エラー: 「機能セクションが見つかりません」 |
 | `_phase.md` がない（merge 時） | エラー: 「_phase.md が見つかりません」 |
-
----
-
-## 完了後の案内
-
-- 変換方向（split / merge）と入出力パスを報告
-- 機能数・チェック状態（merge 時）を報告
-- 次のステップ:
-  - split 後: 各機能ファイルを個別に編集可能。`/gen-code F-xxxx` で機能単位のコード生成、`/reshape-l3 PH-xxxx` で元に戻せる
-  - merge 後: `/gen-code PH-xxxx` でコード生成、実装完了後は `/archive-l3 PH-xxxx`

@@ -14,7 +14,7 @@ Tri-SSD（Tri-Layer Slice Spec Driven）は、AI/LLMコードエージェント�
 
 ```
 skills/             # スキル定義（skills/<name>/SKILL.md + scripts/ + references/）
-scripts/            # スキル横断の共有スクリプト（ID採番・整合性検証）
+scripts/            # スキル横断の共有スクリプト（ID採番・整合性検証・依存グラフ抽出）
 docs/               # フレームワーク仕様・ガイド
   layer-rules.md    #   レイヤー配置ルール（配置判断の SSOT）
   writing-rules.md  #   記載規約（生成ドキュメントの書き方の SSOT）
@@ -37,7 +37,7 @@ ID形式: `PREFIX-nnnn`（REQ, PH, F）。番号は再利用しない（永久�
 要点のみ:
 
 - フロントマター: `description`（必須）+ `when_to_use`（推奨）。合計1,536文字以内
-- 共通コンテキストブロックは4行版のみ（レイヤー詳細は layer-rules.md に委譲、複製しない）
+- 共通コンテキストブロックは規定文面のみ（レイヤー詳細は layer-rules.md に委譲、複製しない）
 - 本文500行未満、参照は1階層まで、決定的処理は scripts/ へ
 
 ## 開発時の注意

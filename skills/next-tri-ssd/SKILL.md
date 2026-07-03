@@ -4,7 +4,7 @@ when_to_use: 次何すればいい？・どこまで進んだ？何する？・�
 allowed-tools: Read, Glob, Grep, Bash
 ---
 
-# 次の一手コマンド（オーケストレーター）
+# 次の一手スキル（オーケストレーター）
 
 <tri_ssd_context>
 Tri-SSD: L0(任意メモ docs/l0_ideas/) → L1(要件 docs/l1_requirements/vision.md) → L2(構成 docs/l2_foundation/foundation.md) → L3(フェーズ docs/l3_phases/PH-xxxx.md)。
@@ -43,6 +43,8 @@ docs/ の状態から現在地を判定し、「次の一手」を理由付き�
 ユーザーが「〜を作りたい」「〜できるようにしたい」と問題・要望を語っている場合:
 - docs/ が未初期化 → `/init-tri-ssd` → `/gen-l1` の順を提案
 - L1 が既にある → 要望を L1 への追記として `/gen-l1`（再生成モード: 追記）を提案
+
+要望ではなく「この情報をどこかに書き残したい」（設計の約束・教訓・検証結果など）の場合 → `/gen-doc`（配置の振り分け）を提案
 
 ### Step 1: 状態判定（決定的・上から順に評価し、最初に該当した行が現在地）
 

@@ -4,7 +4,7 @@ when_to_use: Tri-SSD を始めたい・セットアップして・初期化し�
 allowed-tools: Read, Write, Bash
 ---
 
-# Tri-SSD 初期化コマンド
+# Tri-SSD 初期化スキル
 
 <tri_ssd_context>
 Tri-SSD: L0(任意メモ docs/l0_ideas/) → L1(要件 docs/l1_requirements/vision.md) → L2(構成 docs/l2_foundation/foundation.md) → L3(フェーズ docs/l3_phases/PH-xxxx.md)。
@@ -24,6 +24,10 @@ Tri-SSD 用のディレクトリ構造と、情報の在り処マップ（docs/R
 - l0_ideas/ はワークフロー外（自由なメモ置き場）
 - 生成するのはディレクトリと docs/README.md（在り処マップ）のみ。レイヤードキュメントの雛形は作らない
 </avoid_over_engineering>
+
+## 引数
+
+- 引数なし
 
 ## 作成するもの
 
@@ -59,11 +63,8 @@ python3 "${CLAUDE_SKILL_DIR}/scripts/init.py"
 
 ## 完了後の案内
 
-**出力**:
-- 作成したディレクトリ・ファイル一覧
-
-**次のステップ**:
-- `/gen-l1` → L1要件を生成（対話または既存ドキュメント変換）
+- 作成したディレクトリ・ファイル一覧を報告
+- `/gen-l1` で L1 要件を生成できることを案内（対話または既存ドキュメント変換）
 
 ---
 
@@ -71,4 +72,4 @@ python3 "${CLAUDE_SKILL_DIR}/scripts/init.py"
 
 | ケース | 対応 |
 |--------|------|
-| docs/ が既に存在 | 警告表示、既存を維持して欠落ディレクトリのみ作成 |
+| docs/ が既に存在 | 警告: 「docs/ は既に存在します」→ 既存を維持し欠落ディレクトリのみ作成 |
