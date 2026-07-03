@@ -2,8 +2,9 @@
 """インライン形式の L3 フェーズファイルをフォルダ構造に分割する。
 
 PH-xxxx_name.md を PH-xxxx_name/ フォルダに分割し、
-_phase.md（目的 + 機能一覧 + Exit Criteria）と
-F-xxxx_*.md（各機能）を生成する。チェック状態 [x] は保持。
+_phase.md（frontmatter + 機能一覧以外の全セクション）と
+F-xxxx_*.md（各機能）を生成する。チェック状態 [x]・frontmatter・
+セクション順序（検証記録・完了サマリ等の任意セクション含む）は保持。
 分割後に元ファイルを削除する。merge.py と往復可能。
 
 使い方:
@@ -20,7 +21,8 @@ if hasattr(sys.stdout, "reconfigure"):  # Windows 等でも UTF-8 出力を保�
     sys.stdout.reconfigure(encoding="utf-8")
     sys.stderr.reconfigure(encoding="utf-8")
 
-PHASES_DIR = Path("docs/l3_phases")
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from _common import PHASES_DIR, build_doc, parse_doc, write_lf  # noqa: E402
 
 
 def resolve_inline(target: str) -> Path | None:
@@ -42,36 +44,6 @@ def slugify(name: str) -> str:
     s = re.sub(r'[\\/:*?"<>|]+', "", name.strip())
     s = re.sub(r"\s+", "-", s)
     return s or "feature"
-
-
-def write_lf(path: Path, text: str) -> None:
-    """改行を LF に固定して書き出す（OS 非依存の決定的出力）。"""
-    with open(path, "w", encoding="utf-8", newline="\n") as f:
-        f.write(text)
-
-
-def split_top_sections(text: str) -> tuple[str, dict[str, str]]:
-    """タイトル行と、トップレベル ## セクション {見出し: 本文} を返す。"""
-    title = ""
-    for ln in text.splitlines():
-        if ln.startswith("# PH-"):
-            title = ln[2:].strip()
-            break
-    sections: dict[str, str] = {}
-    cur: str | None = None
-    buf: list[str] = []
-    for ln in text.splitlines():
-        m = re.match(r"^##\s+(.*)$", ln)
-        if m:
-            if cur is not None:
-                sections[cur] = "\n".join(buf).strip("\n")
-            cur = m.group(1).strip()
-            buf = []
-        elif cur is not None:
-            buf.append(ln)
-    if cur is not None:
-        sections[cur] = "\n".join(buf).strip("\n")
-    return title, sections
 
 
 def parse_features(feature_section: str) -> list[tuple[str, str, str]]:
@@ -106,28 +78,36 @@ def main() -> int:
         print(f"error: 同名フォルダが存在します: {folder}", file=sys.stderr)
         return 1
 
-    title, sections = split_top_sections(src.read_text(encoding="utf-8"))
-    feats = parse_features(sections.get("機能一覧", ""))
+    fm, title, preamble, sections = parse_doc(src.read_text(encoding="utf-8"))
+    feat_section = "\n".join(next((b for h, b in sections if h == "機能一覧"), []))
+    feats = parse_features(feat_section)
     if not feats:
         print("error: 機能セクション（### F-xxx）が見つかりません", file=sys.stderr)
         return 1
 
-    purpose = sections.get("目的", "")
-    exit_c = sections.get("Exit Criteria", "")
+    block_count = len(re.findall(r"(?m)^###\s+F-", feat_section))
+    if block_count != len(feats):
+        print(
+            "error: 解析できない機能ブロックがあります"
+            "（### F-xxx: 名前 の形式か確認してください）",
+            file=sys.stderr,
+        )
+        return 1
 
     folder.mkdir(parents=True)
 
-    feat_list = "\n".join(f"- {fid}: {fname}" for fid, fname, _ in feats)
-    phase_md = (
-        f"# {title}\n\n## 目的\n{purpose}\n\n"
-        f"## 機能一覧\n{feat_list}\n\n## Exit Criteria\n{exit_c}\n"
-    )
-    write_lf(folder / "_phase.md", phase_md)
+    # 機能一覧のみリストに差し替え、他セクションは原文の行をそのまま保持する
+    feat_list_body = [""] + [f"- {fid}: {fname}" for fid, fname, _ in feats] + [""]
+    new_sections = [
+        (h, feat_list_body if h == "機能一覧" else b) for h, b in sections
+    ]
+    write_lf(folder / "_phase.md", build_doc(fm, title, preamble, new_sections))
 
     created: list[str] = []
     for fid, fname, body in feats:
         # インラインの **受け入れ条件**: を F ファイルの ## 受け入れ条件 に変換
-        fbody = re.sub(r"(?m)^\*\*受け入れ条件\*\*\s*:\s*$", "## 受け入れ条件", body)
+        # （[ \t]* に限定: \s* だと改行を跨いで後続の空行まで消費してしまう）
+        fbody = re.sub(r"(?m)^\*\*受け入れ条件\*\*[ \t]*:[ \t]*$", "## 受け入れ条件", body)
         content = f"# {fid}: {fname}\n\n{fbody}\n"
         fpath = folder / f"{fid}_{slugify(fname)}.md"
         write_lf(fpath, content)

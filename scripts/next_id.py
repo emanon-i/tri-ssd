@@ -1,15 +1,20 @@
 #!/usr/bin/env python3
-"""既存の Tri-SSD ID を走査し、次の連番 ID を出力する。
+"""既存の Tri-SSD ID を走査し、次の連番 ID を出力する（スキル共有スクリプト）。
 
-ID 形式は PREFIX-nnnn（4桁ゼロ埋め）。docs/ 配下の *.md を再帰的に
-検索し、指定 PREFIX の最大番号 + 1 から採番する。1件も無ければ 0001。
+ID 形式は PREFIX-nnnn（4桁ゼロ埋め）。docs/ 配下の *.md を再帰的に検索し、
+指定 PREFIX の最大番号 + 1 から採番する。1件も無ければ 0001。
+`docs/l3_phases/_archive/` も走査対象に含まれるため、アーカイブ済み ID の
+番号は再利用されない（永久欠番）。
+
+注意: 既存ファイルを上書き再生成する場合は、旧ファイルを破棄する**前**に
+本スクリプトを実行すること（破棄後に実行すると番号が巻き戻る）。
 
 使い方:
     python3 next_id.py <PREFIX> [--count N] [--docs DIR]
 
 例:
-    python3 next_id.py PH            # -> PH-0002
-    python3 next_id.py F --count 3   # -> F-0012 / F-0013 / F-0014（改行区切り）
+    python3 next_id.py REQ            # -> REQ-0007
+    python3 next_id.py F --count 3    # -> F-0012 / F-0013 / F-0014（改行区切り）
 """
 from __future__ import annotations
 

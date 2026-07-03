@@ -4,6 +4,112 @@ Tri-SSD (Tri-Layer Slice Spec Driven) フレームワークの変更履歴です
 
 形式は [Keep a Changelog](https://keepachangelog.com/ja/1.1.0/) に準拠しています。
 
+## [5.0.0] - 2026-07-03
+
+### Added
+
+- **`docs/layer-rules.md` を新設**（レイヤー配置ルールの SSOT）
+  - 配置決定表・配置判定フロー（Q0〜Q4）・曖昧ケースの裁定・ファイル分割ルール・適正粒度基準を明文化
+  - 判定軸は「更新トリガー」: L1=「実現手段を決めなくても真か」、L2/L3=「フェーズ完了後も真か」
+  - 全スキルの `<tri_ssd_context>` から参照される（配置判断に迷ったときだけロードする段階的注入）
+- **`/review-tri-ssd` スキルを新設** — 整合性検証と進捗サマリ（読み取り専用）
+  - `scripts/validate_ids.py`（新設・共有）で dangling 参照・重複定義・status と検証記録の突合を機械的に検証
+  - 要件の網羅性（どの PH からも参照されない REQ）と仕様⇔実装の乖離（converge 軽量版）を読み合わせで確認
+- **L1/L2/L3 テンプレートに YAML frontmatter を導入**
+  - L1: `layer` / `product_type`（gui|cli|api|library|batch|data|doc|other）/ `updated`
+  - L2: `layer` / `updated`
+  - L3: `id` / `status`（planned|in_progress|done）/ `requires`（REQ 参照）/ `updated`
+- **テンプレート新セクション**（いずれも任意・追加式で後方互換）
+  - L1: 「原則」（1.4 を改名）・「体験要件」（product_type 別の使い勝手の要求）・「やらないこと」
+  - L2: 「インターフェース仕様」（product_type 別の具体仕様）・「確認済みの前提」（スパイクで判明した事実・出所付き）・「設計判断の記録」
+  - L3: 「事前確認」（確認作業のみ。結果は L2 へ）・「検証記録」（事後証跡）・「完了サマリ」（archive 時に記入）
+- **`/gen-code` に Phase 0（clarify）を追加** — 対象 F に未解決 TODO・矛盾がある場合のみ最大3〜5問を確認（なければ質問ゼロで即実装）
+- **`/archive-l3` をフェーズ完了処理に拡張**
+  - ゲート: 検証記録の全 F PASS を確認（未達は警告+続行確認）
+  - 完了サマリから生成プロダクトの CHANGELOG.md へ自動追記（出所は L3 完了サマリに一本化）
+  - 知見の L1/L2 反映を提案（承認制）。「仕様は腐る、コードが真実」の思想を明文化
+- **`/init-tri-ssd` が docs/README.md（情報の在り処マップ）を生成**するように拡張
+- **`/next-tri-ssd` スキルを新設** — オーケストレーター（現在地判定→次の一手の提案・実行）
+  - docs/ の状態から現在地を決定的に判定（未初期化→init、要件なし→gen-l1、…、全アーカイブ→次期計画）し、ワークフローの順序を知らなくても開発を進められる
+  - validate_ids で健全性を確認し、エラー時は review-tri-ssd を先に提案。「（未作成）」ポインタ・未振り分けの `（未確認・要検証）` 印も検出
+- **`docs/writing-rules.md` を新設**（記載規約の SSOT。配置=layer-rules / 書き方=writing-rules の分離）
+  - 文章原則（1文1事実・修飾語禁止・結論先行）・構造化（表>箇条書き>散文・見出し=参照単位）・図の Mermaid 統一・SSOT・300行分割・**機械契約マーカー表**（TODO / `（未確認…）` 印 / `検証:` 行 / frontmatter が機械的に読まれる契約であることを明文化）
+  - 生成系5スキル（gen-l1/l2/l3/interface/data）の出力フォーマット節から参照
+- **`.claude/rules/skill-development.md` に「XML タグによる強指示」を明文化**（強い制約はタグで囲む理由と、生成ドキュメント側では使わない使い分け）
+- **`/gen-interface` スキルを新設** — L2 インターフェース設計の深掘り（`docs/l2_foundation/interface.md`）
+  - gui は「画面一覧・画面遷移図（Mermaid stateDiagram-v2、ユーザー状態含む）・主要導線（何をする→何ができる→応答/待ち時間フィードバック）」の3点セット
+  - cli / api / library / batch / doc の簡潔テンプレも収録（`references/interface-spec-guide.md`）
+  - foundation §3 の肥大時の分離先（分離の目安: 画面5枚超・主要導線3本超・約100行超）。分離時は foundation にポインタを残す
+- **`/gen-data` スキルを新設** — L2 データ設計の深掘り（`docs/l2_foundation/data.md`）
+  - 概念モデル（Mermaid erDiagram）・**データライフサイクル**（発生トリガー・更新頻度・増加ペース・保持/ローテーション・削除方針）・整合性の判断基準（`references/data-design-guide.md`）
+  - **SSOT 裁定**: スキーマのカラム定義の正は実装コード（migration/DDL/ORM）。data.md には判断基準と正へのパス参照のみ置き、全カラム表を複製しない
+  - 分離の目安: エンティティ7個超・ライフサイクル要件あり・約100行超
+- **PH-0000 に第6の機能「技術前提の事実検証（スパイク）」を追加**
+  - 計画全体が依存する未確認の前提（外部 API の実在・レート制限、核心処理の実現可否、ライブラリ制約）を実装前に最小の検証コード・実測で確認
+  - gen-l2 が技術選定時に未確認の仮定へ `（未確認・PH-0000 で検証）` 印を残し、gen-l3 が拾って検証作業化。判明した事実は L2「確認済みの前提」へ昇格
+  - 前提の振り分け: 計画全体を左右する → PH-0000 スパイク F ／ 特定フェーズのみ → 該当 PH の「事前確認」節
+
+### Changed
+
+- **`/split-l3` と `/merge-l3` を `/reshape-l3` に統合**（破壊的変更）
+  - 1能力（インライン⇔フォルダの往復変換）・同一更新トリガーのため統合。変換方向は対象の形式から自動判定
+  - split.py / merge.py を frontmatter・全セクション順序（検証記録・完了サマリ等）保持に改修（往復 diff ゼロを維持）
+- **`next_id.py` をプラグインルート `scripts/` に一本化**（gen-l1 / gen-l3 の重複コピーを削除）
+  - `_archive/` も走査対象であることを明記し、上書き再生成時の採番手順（破棄前に採番）を gen-l1 に追加（REQ ID 巻き戻りによる L3 参照のサイレント破壊を防止＝永久欠番方式）
+- **全スキルの `<tri_ssd_context>` を4行版に縮小**（レイヤー詳細の複製をやめ layer-rules.md への参照に置換。8スキル×11行の重複を解消）
+- **`/gen-l3` の PH-0000 定型を `references/ph-0000-template.md` に外出し**（本文 364行→269行。初回実行時のみロード）
+- 検証結果の記録先を AC 行への追記から「検証記録」セクションに変更（Plan と事後証跡の分離）
+- `.claude/rules/command-development.md` → `skill-development.md`（globs を `skills/**/*.md` に修正。v4.0.0 以降デッドルールだったものを再生）
+- CLAUDE.md / docs/plugin-development-guide.md を v4 以降の実態（skills 形式・`when_to_use`・description+when_to_use 合計1,536字制限）に全面改訂
+- 三層モデル表の重複を解消（正は docs/layer-rules.md。README はナビ用の派生複製として維持）
+- **全8スキルの `description` / `when_to_use` の発火語彙を増強**（口語トリガー・英語表現・成果物と前提条件を明記。誤発火防止に「〜のときは別スキル」の区別を追加）
+- **gen-l1 / gen-l2 / gen-l3 の出力テンプレートを「テンプレート＋記入ガイド」として `references/` に外出し**（段階的開示の徹底）
+  - `gen-l1/references/vision-template.md`・`gen-l2/references/foundation-template.md`・`gen-l3/references/phase-template.md`
+  - 各セクションに「何を書く/書かないの判断基準・良い例/悪い例」を追加（本文は必須構造の要点と参照指示のみ残す）
+- **L2 テンプレートに品質セクションを追加**（いずれも省略可・記入判断基準付き）
+  - 「データモデル」（Mermaid erDiagram 例付き）・「エラー処理方針」（分類・見せ方・リトライ方針。L3 の AC「エラー時〜」の上流定義）・「運用」（環境変数・デプロイ・監視）
+  - layer-rules.md の配置決定表にも対応行を追加（SSOT 同期）
+- **L2 を複数ファイル構成に**（foundation.md をハブとし、規模で `interface.md` / `data.md` を分離）
+  - layer-rules.md のファイル分割ルール（L2 の適用結果）を改訂し、分離判定の目安とポインタ書式を明文化
+  - 曖昧ケースの裁定に「スキーマ定義 vs データ設計」「未確認の仮定 vs 確認済みの前提」を追加
+  - gen-code は実装対象に関連する分離ファイルだけ読む（UI 実装→interface.md、データ層→data.md。段階的注入）。review-tri-ssd も分離ファイルを乖離チェック対象に追加
+- **図を Mermaid に統一**（ASCII 図の廃止）
+  - 構成図=flowchart / 画面遷移=stateDiagram-v2 / データ関係=erDiagram / 時系列=sequenceDiagram。foundation §2.2 のコンポーネント構成図を ASCII 図から Mermaid flowchart に変更（ディレクトリツリー表示は図ではないため維持）
+
+### Fixed
+
+- `.gitignore` に `__pycache__/`・`*.pyc` を追加し、混入していた `skills/reshape-l3/scripts/__pycache__/` を削除
+- 引数を取らないスキル（init-tri-ssd / gen-l2）の `argument-hint: なし` を削除（規約は「引数がある場合」のみ記載）
+- **実行エージェント視点レビュー（Codex＋サブエージェント2体）で検出した不整合を修正**:
+  - gen-code / archive-l3 にフォルダ形式（reshape-l3 split 後）の書き込み先ルールを追加（AC は `F-*.md`、status・検証記録は `_phase.md`。reshape-l3 との片側契約を解消）
+  - gen-l3 の初回実行判定を修正（全フェーズアーカイブ後の再計画・フォルダ形式のみの状態で PH-0000 を重複生成しない）
+  - `（未確認・PH-0000 で検証）` 印の除去を gen-code の正規操作として明記（スパイク AC「印が外れている」を満たせるように。前提が崩れた場合の中断・L2 見直し提案も追加）
+  - CHANGELOG の出所を archive-l3（L3 完了サマリ）に一本化（gen-l2 再生成時に CHANGELOG へ直接書く指示を削除）
+  - reshape-l3 の往復変換で見出し直後の空行が失われるバグを修正（`\s*$` が改行を跨いで消費していた。split→merge の往復 diff ゼロを実測確認）
+  - validate_ids.py: PH-0000 未生成時の印参照を dangling エラーでなく情報扱いに（規定フローの正常状態が偽エラーになっていた）
+  - gen-code: PH-0000 実装時は「プロジェクト設定ファイル必須」の例外・テスト型 AC 0件の F は Phase 3 をスキップ・目視確認 AC の事後完了フロー・検証に必要な外部手段の不足を Phase 0 の質問トリガーに追加
+  - erDiagram 記入例に「属性はキー・制約のみ」注記（スキーマ複製の誘発防止）/ WebSearch を候補が自明でない場合のみに条件付き化 / `<!-- TODO: 要確認 -->` マーカー形式を layer-rules に明文化（gen-code の検出契約を全レイヤー共通に）
+  - ph-0000-template の「6機能/5機能」不一致・PH-0000 の `requires` 空リスト可・reshape-l3 の Glob パターン・プレースホルダ表記（`PREFIX-xxx` → `PREFIX-xxxx`）・S-nn の採番ルール・「converge」ジャーゴン等の細部を統一
+- **第2次レビュー（初見エージェント＋敵対的契約監査）で検出した不整合を修正**:
+  - `（未確認…）` 印のライフサイクルを再設計: gen-l2 は `（未確認・要検証）` で付与 → gen-l3 が検証場所を確定して `（未確認・PH-xxxx で検証）` に更新 → gen-code が昇格時に除去（文言ハードコードによる振り分けズレ・PH-0000 アーカイブ後の行き場なし・表記ゆれを一括解消。非初回の計画レベル前提は次期フェーズ先頭にスパイク F を置く）
+  - **「事前確認」節の実行工程を gen-code に追加**（実行者不在だったワークフローの穴。Phase 0 で未チェックの事前確認を実施→L2 記録→印除去→チェック）
+  - gen-code の「部分成功は認めない」に目視確認 AC の例外を明記（PARTIAL 正常終了と矛盾していた）。PARTIAL 記録は AC-n でなく条件の要約で書く（AC-n 禁止則との矛盾解消）
+  - スパイク F の「前提が崩れた」場合の終了状態を定義（不成立の確認も成果 = `PASS（前提不成立を確認、日付）` で正常終了し計画見直しを提案）
+  - gen-l3: 再生成モードにフォルダ形式の書き込み先規則を追加（単一ファイル並存生成の禁止）・「初回実行」節と ph-0000-template の旧条件文を前提処理の厳密判定に統一・PH-0000 は 2〜4 フェーズの数に含めないと明記
+  - archive-l3: 知見還元時の印除去・全アーカイブ後の次サイクル案内（終端の解消）。gen-code/gen-l3 の archive 案内を「フェーズ単位」に統一
+  - gen-l2: 分離判定に「§2.4 約100行超」トリガー補完・§3 記入条件に「外部との契約」補完・再生成時の印棚卸し・L3 完了サマリへの越権記入を削除
+  - review-tri-ssd: 引数省略時/指定時のスコープを明確化・「ドキュメント衛生」チェック新設（未作成ポインタ・300行超過・未振り分け印）
+  - layer-rules: F 番号は全体通し・永久欠番の理由・検証結果の値は PASS/PARTIAL（FAIL は幽霊ステートだった）
+  - reshape-l3 の「常に往復可能」を正確化（テンプレ準拠なら diff ゼロ、逸脱時は機能一覧が正規化・F-ID 順）・S-nn は validate 対象外と明記・スパイク検証コードの置き場（spike/ 使い捨て）を規定
+
+### Migration（v4.0.0 からの移行）
+
+| 旧 | 新 |
+|----|----|
+| `/split-l3 PH-xxx` | `/reshape-l3 PH-xxx`（方向は自動判定） |
+| `/merge-l3 PH-xxx` | `/reshape-l3 PH-xxx`（同上） |
+| 既存の vision.md / foundation.md / PH ファイル | そのまま有効（frontmatter・新セクションはすべて任意・追加式） |
+
 ## [4.0.0] - 2026-07-03
 
 ### Changed

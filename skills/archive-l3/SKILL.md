@@ -1,134 +1,160 @@
 ---
-description: 実装が完了した L3 フェーズドキュメントを docs/l3_phases/_archive/ へ移動し、作業ディレクトリをクリーンに保つ。同梱スクリプトで決定的に移動。
-when_to_use: フェーズの実装が完了してアーカイブしたい・archive したいと言われたとき。gen-code の完了後。
+description: 実装が完了した L3 フェーズの完了処理を行う。検証記録の PASS を確認（ゲート）し、完了サマリから CHANGELOG を追記、実装で得た知見の L1/L2 反映を提案したうえで、docs/l3_phases/_archive/ へ移動する。gen-code で全機能 PASS になった後に使う。
+when_to_use: フェーズが終わった・アーカイブして・archive して・フェーズを閉じて・完了処理して・PH-0001 終わったから片付けて・完了フェーズを CHANGELOG に反映して、と言われたとき。英語では archive the phase / close the phase。実装が残っている場合は gen-code、完了状態の確認だけなら review-tri-ssd を使う。
 argument-hint: "[PH-xxxx|パス] - アーカイブ対象（省略時は全フェーズ確認）"
-allowed-tools: Read, Glob, Grep, Bash
+allowed-tools: Read, Write, Edit, Glob, Grep, Bash
 ---
 
-# L3 フェーズアーカイブコマンド
+# L3 フェーズ完了・アーカイブコマンド
 
 <tri_ssd_context>
-Tri-SSD（Tri-Layer Slice Spec Driven）はAI/LLMコードエージェントを前提とした仕様駆動開発。
-
-レイヤー構造:
-- L0: アイディア・ラフメモ（docs/l0_ideas/）- 任意
-- L1: 要件（docs/l1_requirements/vision.md）
-- L2: システム構成（docs/l2_foundation/foundation.md）
-- L3: フェーズ（docs/l3_phases/PH-xxx.md）- 機能+受け入れ条件
-
-ID形式: PREFIX-nnnn（REQ, PH, F）
+Tri-SSD: L0(任意メモ docs/l0_ideas/) → L1(要件 docs/l1_requirements/vision.md) → L2(構成 docs/l2_foundation/foundation.md) → L3(フェーズ docs/l3_phases/PH-xxxx.md)。
+ID形式: PREFIX-nnnn（REQ, PH, F）。番号は再利用しない（永久欠番）。
+配置・分割・粒度の判断に迷ったら `${CLAUDE_SKILL_DIR}/../../docs/layer-rules.md` を読むこと。
 </tri_ssd_context>
 
 ## 概要
 
-実装が完了して不要になったL3フェーズドキュメントを `_archive/` に移動する。
-L3ドキュメントは実装完了後に陳腐化するため、アクティブな作業ディレクトリをクリーンに保つ。
+フェーズ完了イベントの一連の処理を行う（すべて「フェーズ完了」という同一トリガーで発生するため1スキルに集約）:
+
+1. **ゲート**: 検証記録の PASS を確認
+2. **完了サマリ**: フェーズの成果と知見を L3 に記入
+3. **CHANGELOG 追記**: 完了サマリからプロダクトの変更履歴を生成（出所は L3 に一本化）
+4. **知見還元**: L1/L2 に反映すべき知見を提案（承認制）
+5. **移動**: `_archive/` へ（L3 は実装完了後に陳腐化するため、アクティブディレクトリをクリーンに保つ）
+
+**思想: 仕様は腐る、コードが真実。** L3 は完了したら葬る。恒常的に真な知見だけを L1/L2 へ引き上げ、時系列の文脈は CHANGELOG が受け持つ。
 
 ## アーカイブ時の原則
 
 <avoid_over_engineering>
-- アーカイブは単純なファイル移動。メタデータの追加や要約生成はしない
-- アーカイブ済みファイルを戻したい場合は手動で `_archive/` から移動すれば十分
-- アーカイブ前のレビューや確認チェックは不要（ユーザーの判断を尊重）
+- 完了サマリは3〜5行で十分（詳細を書き直さない。詳細は archive 内に残る）
+- CHANGELOG エントリは完了サマリの要約。二重に文章を書かない
+- 知見還元は「提案→承認」のみ。勝手に L1/L2 を書き換えない
+- 極小プロジェクトでは手順3・4をスキップしてよい（ユーザーに1回だけ確認）
+- 移動自体は単純なファイル移動。戻したい場合は手動で `_archive/` から移動すれば十分
 </avoid_over_engineering>
 
 ## 引数
 
 - `$ARGUMENTS` (省略可): アーカイブ対象
-  - **PH-ID**: `PH-0001` → 指定フェーズをアーカイブ
+  - **PH-ID**: `PH-0001` → 指定フェーズを完了処理
   - **ファイルパス**: `docs/l3_phases/PH-0001_mvp.md` → 直接指定
   - **省略**: `docs/l3_phases/` 内の全フェーズを列挙し、ユーザーに選択させる
 
 ### 使用例
 
 ```
-/archive-l3 PH-0001                         # 指定フェーズをアーカイブ
+/archive-l3 PH-0001                         # 指定フェーズを完了処理
 /archive-l3 docs/l3_phases/PH-0001_mvp.md   # パスで直接指定
 /archive-l3                                  # 全フェーズを列挙して選択
 ```
 
-## 前提処理
+## 実行手順
 
-1. `$ARGUMENTS` で指定された対象を特定
-   - ID指定: Glob で `docs/l3_phases/PH-*` を検索（`_archive/` は除外）
-   - パス指定: 直接参照
-   - 省略時: `docs/l3_phases/` 内の `PH-*` を全て列挙
-2. 対象がアクティブ（`_archive/` 外）であることを確認
+### Step 1: 対象特定
 
----
-
-## 実行
-
-同梱スクリプトで決定的に移動する:
+同梱スクリプトの一覧表示を利用する:
 
 ```bash
 python3 "${CLAUDE_SKILL_DIR}/scripts/archive.py" --list        # アーカイブ可能なフェーズを一覧
-python3 "${CLAUDE_SKILL_DIR}/scripts/archive.py" PH-0001       # 指定フェーズをアーカイブ
 ```
 
-引数なしのときは、まず `--list` で一覧をユーザーに提示し、選択を受けてから対象を指定して実行する。`python3` が無ければ `python` / `py`。スクリプトが使えない場合のみ、下記「処理手順（フォールバック）」に従う。
+引数なしのときは一覧をユーザーに提示し、選択を受けてから進む。対象がアクティブ（`_archive/` 外）であることを確認する。
 
-## 処理手順（フォールバック）
+### Step 2: ゲート（検証記録の PASS 確認）
 
-### Step 1: 対象ファイル特定
+対象 PH を読み、以下を確認する。**フォルダ形式**（`PH-xxxx_*/`）の場合は `_phase.md`（frontmatter・検証記録・Exit Criteria）と全 `F-*.md`（AC チェック状態）の両方を読む:
 
-**引数ありの場合**:
-1. 対象ファイル/フォルダを特定
-2. 存在確認
+- 「検証記録」に全 F の PASS が記録されているか
+- frontmatter が `status: done` か
 
-**引数なしの場合**:
-1. `docs/l3_phases/` 内のアクティブなフェーズを列挙（`_archive/` 配下を除く）
-2. 一覧をユーザーに提示
+**未達の場合は警告して続行確認**（ブロックはしない。ユーザーの判断を尊重）。未達が**目視確認 AC のみ**の場合はユーザーに確認し、「確認済み」なら AC を `[x]`・検証記録を `PASS（目視、日付）`・status を `done` に更新してから続行する:
 
 ```markdown
-## アーカイブ可能なフェーズ
+⚠️ PH-0002 は完了条件を満たしていません:
+- F-0005: 検証記録に PASS がありません（未実装または未検証）
+- status: in_progress
 
-| # | フェーズ | 形式 |
-|---|---------|------|
-| 1 | PH-0001_mvp.md | インライン |
-| 2 | PH-0002_beta/ | フォルダ |
-
-どのフェーズをアーカイブしますか？（番号、ID、または「all」）
+このままアーカイブしますか？（未完了のままアーカイブすると検証証跡が不完全になります）
+→ 実装を続けるなら /gen-code F-0005
 ```
 
-3. ユーザーの選択に基づいて対象を決定
+### Step 3: 完了サマリの記入
 
-### Step 2: アーカイブディレクトリ確認
+PH の「完了サマリ」セクション（フォルダ形式では `_phase.md`）に以下を記入する（既に記入済みなら確認のみ）:
+
+```markdown
+## 完了サマリ
+- **成果**: [このフェーズで何ができるようになったか。1-2行]
+- **変更種別**: Added | Changed | Fixed（CHANGELOG 用）
+- **知見**（省略可）: [実装で判明した、次フェーズ以降も真であり続けること]
+```
+
+知見の例: 外部APIの制約が判明した／採用ライブラリに制限があり回避策を入れた／要件の解釈が変わった。
+（フェーズ内で閉じる作業メモは書かない。それは archive にそのまま残る）
+
+### Step 4: CHANGELOG 追記
+
+プロジェクトルートの `CHANGELOG.md` に、完了サマリから生成したエントリを**追記**する（無ければヘッダ付きで新規作成）:
+
+```markdown
+## YYYY-MM-DD - PH-xxxx: [フェーズ名]
+
+### Added（変更種別に応じて Added / Changed / Fixed）
+- [完了サマリの成果を1-3行で]（F-xxxx, F-xxxx）
+```
+
+- 出所は L3 完了サマリのみ（ここで新しい文章を考えない＝二重入力の回避）
+- 既存の CHANGELOG が別形式（バージョン番号見出し等）の場合はその形式に合わせる
+
+### Step 5: 知見還元の提案（承認制）
+
+完了サマリの「知見」から、L1/L2 に反映すべきものを判定して**提案**する:
+
+| 知見の種類 | 反映先 |
+|-----------|--------|
+| 外部の事実（API仕様・制約・実測値） | L2「確認済みの前提」に追記（対応する `（未確認…）` 印が §5 に残っていれば外す） |
+| 設計判断の変更（採用/却下の理由） | L2「設計判断の記録」を更新 |
+| 要求自体の変化（やらないことにした等） | L1「要求と意思決定」「やらないこと」を更新 |
+
+```markdown
+## 知見の反映提案
+1. L2「確認済みの前提」に追加: 「Stripe Webhook は署名検証必須（PH-0002 実装時に実測）」
+2. L1「やらないこと」に追加: 「リトライUIは作らない → 自動リトライで十分と判明」
+
+反映しますか？（番号選択 / all / skip）
+```
+
+承認された項目のみ L1/L2 を編集する。知見が無ければこの手順はスキップ。
+
+### Step 6: 移動
 
 ```bash
-mkdir -p docs/l3_phases/_archive
+python3 "${CLAUDE_SKILL_DIR}/scripts/archive.py" PH-0001       # _archive/ へ移動
 ```
 
-### Step 3: ファイル移動
-
-```bash
-# インライン形式
-mv docs/l3_phases/PH-xxxx_name.md docs/l3_phases/_archive/
-
-# フォルダ形式
-mv docs/l3_phases/PH-xxxx_name/ docs/l3_phases/_archive/
-```
-
-### Step 4: 完了報告
+`python3` が使えない環境（Windows の python3 は Store スタブの場合がある）では `python` / `py`。スクリプトが使えない場合のみフォールバック:
+`mkdir -p docs/l3_phases/_archive` → `mv docs/l3_phases/PH-xxxx_name.md docs/l3_phases/_archive/`（フォルダ形式は `PH-xxxx_name/` ごと移動）
 
 ---
 
 ## 完了後の案内
 
 ```markdown
-# アーカイブ完了
+# フェーズ完了処理 完了
 
-**移動先**: docs/l3_phases/_archive/
-
-## アーカイブしたフェーズ
-- PH-0001_mvp.md
+**アーカイブ**: docs/l3_phases/_archive/PH-0001_mvp.md
+**CHANGELOG**: 追記済み（YYYY-MM-DD - PH-0001）
+**知見還元**: L2 に1件反映 / スキップ
 
 ## 残りのアクティブフェーズ
-- PH-0002_beta.md
-- PH-0003_release.md
+- PH-0002_beta.md（in_progress）
 
 **元に戻す場合**: `_archive/` から `docs/l3_phases/` に手動で移動してください
 ```
+
+アクティブフェーズが残っていない場合: 次の開発サイクルは `/gen-l3` で次期フェーズを計画できることを案内する（PH-0000 は再生成しない。番号は続きから）。
 
 ---
 
@@ -140,3 +166,4 @@ mv docs/l3_phases/PH-xxxx_name/ docs/l3_phases/_archive/
 | 既にアーカイブ済み | 警告: 「既に `_archive/` にあります」 |
 | `_archive/` に同名が存在 | エラー: 「同名ファイルが `_archive/` に存在します。手動で確認してください」 |
 | アクティブなフェーズがない | 情報: 「アーカイブ可能なフェーズがありません」 |
+| 検証記録に PASS 未記録の F がある | 警告: 未達内容を提示して続行確認（Step 2） |
