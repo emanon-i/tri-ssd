@@ -1,110 +1,126 @@
-# Tri-SSD Plugin for Claude Code
+# Tri-SSD
 
-AI/LLMコードエージェント向けのシンプルな仕様駆動開発フレームワーク
+AI コーディングエージェントによる長期開発のための、知識ライフサイクル管理とコンテキスト最適化のハーネス（Claude Code プラグイン）。
+
+- **知識を寿命で分ける**: Goal（目的）・Docs（あるべき状態）・Tasks（差分を解消する作業）・Notes（一時情報）・CHANGELOG（変更履歴）
+- **必要な部分だけ読む**: Task・ID・コードパスを起点に、読むべきセクションだけを知識グラフから選ぶ（理由・予算・省略の明示付き）
+- **文書を腐らせない**: 参照切れ・履歴汚染・重複・肥大化を機械的に検出し、Docs を現在形のまま保つ
+- **完了を証拠で決める**: 受け入れ条件ごとの検証証跡と、証跡取得後のコード変更検知による完了ゲート
+
+設計の詳細は [docs/knowledge-model.md](docs/knowledge-model.md)（置き場と寿命）・[docs/writing-rules.md](docs/writing-rules.md)（書き方）・[docs/architecture.md](docs/architecture.md)（仕組み）・[docs/evaluation.md](docs/evaluation.md)（実測）。
 
 ## インストール
 
 ```bash
-# マーケットプレイスを追加
 /plugin marketplace add emanon-i/tri-ssd
-
-# プラグインをインストール
 /plugin install tri-ssd@emanon-i-tri-ssd
 ```
 
-## クイックスタート
+必要なもの: Python 3.10 以上（標準ライブラリのみ）と git。外部サービス・追加パッケージは不要。
+
+| Skill | 使う場面 |
+|---|---|
+| `/tri-ssd:task` | 実装・バグ修正・Task の作成・検証・完了・作業の再開 |
+| `/tri-ssd:docs` | Goal・仕様・設計の作成と改訂、判断の記録 |
+| `/tri-ssd:note` | 作業メモ・引き継ぎ・ノートの整理 |
+| `/tri-ssd:setup` | 初期化・既存プロジェクトへの導入・旧版からの移行 |
+
+Skill は会話の内容から自動で選ばれる。名前を覚える必要はない。
+プラグインは2つのフックを登録する: セッション開始時に現在位置を文脈へ入れ、`docs/` の Markdown を編集した直後に検査結果を返す（Tri-SSD プロジェクト以外では何もしない）。
+
+## 初期化
 
 ```bash
-# 1. ディレクトリ構造を初期化
-/init-tri-ssd
-
-# 2. L1（要件）を生成
-/gen-l1
-
-# 3. L2（システム構成）を生成
-/gen-l2
-
-# 4. L3（フェーズ・機能+受け入れ条件）を生成
-/gen-l3
-
-# 5. コード・テストを生成
-/gen-code PH-xxxx
-
-# 6. 整合性・進捗を確認（任意）
-/review-tri-ssd
-
-# 7. フェーズの完了処理（ゲート確認 → CHANGELOG → 知見還元 → アーカイブ）
-/archive-l3 PH-xxxx
+python3 <plugin>/scripts/tri.py init --name "My App"
 ```
 
-順序を覚える必要はありません — `/next-tri-ssd` が現在地から次の一手を提案します。
+または Claude に「Tri-SSD を始めたい」と伝える（setup スキル）。作成されるもの:
 
-## コマンド一覧
-
-| コマンド | 説明 |
-|---------|------|
-| `/next-tri-ssd` | 現在地を判定し次の一手を提案・実行（迷ったらこれ） |
-| `/init-tri-ssd` | ディレクトリ構造と情報の在り処マップを初期化 |
-| `/gen-l1 [ファイルパス]` | L1要件を生成（対話モード or 既存ドキュメント変換） |
-| `/gen-l2` | L2システム構成を生成 |
-| `/gen-interface` | L2インターフェース設計を深掘り（画面一覧・遷移図・導線 → interface.md） |
-| `/gen-data` | L2データ設計を深掘り（概念モデル・ライフサイクル → data.md） |
-| `/gen-doc [書きたい内容]` | 書きたい情報を正しい置き場へ振り分け（機能契約・教訓・検証ログ等） |
-| `/gen-l3 [PH-xxxx]` | L3フェーズ（機能+受け入れ条件）を生成 |
-| `/reshape-l3 <PH-xxxx>` | L3フェーズの形式を相互変換（インライン⇔フォルダ） |
-| `/gen-code <PH-xxxx\|F-xxxx>` | コード・テストを生成し、検証記録を残す |
-| `/review-tri-ssd [PH-xxxx]` | ID整合性・要件網羅・進捗を検証 |
-| `/archive-l3 [PH-xxxx]` | フェーズ完了処理（ゲート・CHANGELOG・知見還元・アーカイブ） |
-
-### 引数記法の凡例
-
-| 記法 | 意味 | 例 |
-|------|------|-----|
-| `<引数>` | 必須引数 | `/gen-code <PH-xxxx>` |
-| `[引数]` | 省略可能な引数 | `/gen-l1 [ファイルパス]` |
-
-## 三層モデル
-
-| レイヤー | 内容 | ファイル |
-|---------|------|----------|
-| L0 | アイディア・ラフメモ（任意） | docs/l0_ideas/ |
-| L1 | 要件（なぜ作るか・何ができれば成功か） | docs/l1_requirements/vision.md |
-| L2 | システム構成（技術スタック・アーキ） | docs/l2_foundation/foundation.md |
-| L3 | フェーズ（機能一覧 + 受け入れ条件） | docs/l3_phases/PH-xxxx.md |
-
-どの情報をどのレイヤーに置くかの判定ルール・ファイル分割基準・粒度基準は [docs/layer-rules.md](docs/layer-rules.md) を参照してください。
-
-## ディレクトリ構成（生成後）
-
-```
+```text
 docs/
-  README.md                     # 情報の在り処マップ
-  l0_ideas/                     # L0: アイディア・ラフメモ（任意）
-  l1_requirements/
-    vision.md                   # L1: 要件
-  l2_foundation/
-    foundation.md               # L2: システム構成
-  l3_phases/
-    PH-nnnn_*.md                # L3: フェーズ（機能+受け入れ条件）
+  goal.md          # Goal: 目的・成功状態・原則・やらないこと（常に読まれるので短く）
+  tasks/           # Task（完了すると tasks/_done/ へ）
+  notes/           # 共有ノート（handoff.md = 引き継ぎ）
+CHANGELOG.md       # 意味のある変更の履歴（Keep a Changelog）
+.tri-ssd/          # 個人用ノート（自身の .gitignore で git 管理外）
 ```
 
-## ID形式
+Docs は `docs/` 配下に自由に置く（例: `requirements.md`・`architecture.md`・`api.md`・`adr/`）。分類の基準は更新契機と寿命。
 
-連番（4桁ゼロ埋め）:
+## 日常の使い方
 
-| プレフィックス | 用途 | 例 |
-|---------------|------|-----|
-| `REQ` | 要件（L1内でインライン定義） | REQ-0001 |
-| `PH` | フェーズ | PH-0001 |
-| `F` | 機能 | F-0001 |
+普段は Claude に依頼するだけでよい（「T-0003 をやって」「この仕様を変えたい」「今日はここまで」）。Skill が以下の CLI を使う。
 
-## ドキュメント
+| 場面 | コマンド |
+|---|---|
+| 現在位置 | `tri status` |
+| 作業に必要な文脈 | `tri context T-0003 --emit`（`REQ-0004`・`docs/x.md#見出し`・`src/path.py` も起点にできる） |
+| 差分の一覧 | `tri gaps`（Docs の `（計画: T-nnnn）`・`（未確定）` 等と、Task から参照されていない REQ） |
+| Task | `tri task new "題" --refs REQ-0004 --code src/search/` → `task verify` → `task close` |
+| 変更の影響 | `tri impact --git`（作業差分から見直すべき Docs と関係 Task） |
+| 検査 | `tri check [--changed]` |
+| 変更履歴 | `tri log Changed "何を・なぜ" --refs T-0003` |
+| ノート | `tri note add "..." --task T-0003`・`tri note handoff -`・`tri note triage` |
 
-詳細なガイドは [docs/](docs/) を参照してください。
+`tri` は `python3 <plugin>/scripts/tri.py` の略。プロジェクトルートで実行する（または `--root`）。
 
-## 変更履歴
+典型的な1サイクル:
 
-[CHANGELOG.md](CHANGELOG.md) を参照してください。
+1. あるべき状態を Docs に書く（未実装の記述には `（計画: T-nnnn）`）
+2. `task new` で差分を Task にし、受け入れ条件と `検証:` コマンドを書く
+3. `context` で必要な節だけ読んで実装し、発見は `note add`
+4. Docs を実装後の状態に置き換え（計画マーカーを外す）、`task verify` → `task close`
+5. 意味のある変更を `log`、ノートを整理し、`note handoff` で引き継ぐ
+
+## 既存プロジェクトへの導入
+
+1. `tri init`（既存ファイルは上書きしない。既存の `docs/*.md` はそのまま Docs になる）
+2. README と既存文書から `docs/goal.md` を書く
+3. `tri check` で既存文書の参照切れ・履歴汚染・重複を確認し、触る文書から直す
+4. これから変更する範囲だけ、守るべき状態を Docs に書き（要求は `## REQ-nnnn` 見出し、構成文書は frontmatter `code:`）、Task を作る
+
+全部を最初に文書化しない。コードが正となる詳細は Docs に書き写さない。
+
+## 旧 Tri-SSD からの移行
+
+v5 以前（`docs/l1_requirements/`・`l2_foundation/`・`l3_phases/`）のプロジェクトは移行コマンドで変換する。
+
+```bash
+tri migrate          # ドライラン（計画の表示のみ）
+tri migrate --apply  # 実行
+tri check            # 参照切れの確認
+```
+
+| 旧 | 新 |
+|---|---|
+| `l1_requirements/vision.md` | `docs/goal.md`（REQ はそのまま有効。大きければ REQ を `docs/requirements.md` へ移す） |
+| `l2_foundation/**` | `docs/design/**` |
+| `l3_phases/PH-*`（フォルダ形式は1ファイルに統合） | `docs/tasks/`（planned→open・in_progress→active・done は `_done/`） |
+| `l3_phases/_archive/**` | `docs/tasks/_done/**` |
+| `l0_ideas/**` | `docs/notes/ideas/**` |
+| `<!-- TODO: 要確認 -->`・`（未確認…）` | `（未確定）`・`（未検証）` |
+
+PH・F の ID は互換のため引き続き有効。新しい Task は `T-nnnn`。旧スキルとの対応:
+
+| 旧スキル | 新しい手段 |
+|---|---|
+| `/init-tri-ssd` | setup スキル（`tri init`） |
+| `/gen-l1`・`/gen-l2`・`/gen-interface`・`/gen-data`・`/gen-doc` | docs スキル（種類別ガイドは `skills/docs/references/doc-guide.md`） |
+| `/gen-l3`・`/reshape-l3` | task スキル（`tri task new`。フェーズの代わりに検証可能な Task） |
+| `/gen-code` | task スキル（`context` → 実装 → `task verify`） |
+| `/archive-l3` | `tri task close`（ゲート・アーカイブ）＋ `tri log` |
+| `/review-tri-ssd` | `tri check`・`tri gaps`・`tri status` |
+| `/next-tri-ssd` | SessionStart フックと `tri status` |
+
+## 開発
+
+```bash
+python3 -m unittest discover -s tests -p "test_*.py"   # 自動テスト
+python3 tests/simulate.py --cycles 10                   # 長期運用シミュレーション
+python3 tests/eval_context.py                           # コンテキスト効率の実測
+```
+
+このリポジトリ自身も Tri-SSD で管理している（`docs/goal.md`・`docs/tasks/`）。変更履歴は [CHANGELOG.md](CHANGELOG.md)。
 
 ## ライセンス
 

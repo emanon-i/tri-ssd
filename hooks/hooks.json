@@ -1,0 +1,21 @@
+{
+  "description": "Tri-SSD: セッション開始時に現在位置を文脈に入れ、docs/ の編集直後に検査結果を返す",
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup|resume|clear|compact",
+        "hooks": [
+          { "type": "command", "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/scripts/tri.py\" status --hook", "timeout": 30 }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          { "type": "command", "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/scripts/tri.py\" check --hook", "timeout": 30 }
+        ]
+      }
+    ]
+  }
+}
