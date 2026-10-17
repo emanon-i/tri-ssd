@@ -1,7 +1,7 @@
 schema_version: "1.1"
 name: task-continue
 description: 進行中 Task の続きを頼まれたら task スキルで文脈を取り、AC を検証して完了する
-tags: [task, trigger-positive]
+tags: [outcome, dev, task, trigger-positive]
 plugins: ["../.."]
 expected_outcome: >-
   task スキルが発火し、tri context で必要な節を取り、AC1 のテストを AND 条件を確かめるものにして検証し、

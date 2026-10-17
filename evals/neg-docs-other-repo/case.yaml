@@ -1,7 +1,7 @@
 schema_version: "1.1"
 name: neg-docs-other-repo
 description: Tri-SSD を導入していないリポジトリの「ドキュメント更新して」ではスキルを呼ばない
-tags: [trigger-negative]
+tags: [outcome, dev, trigger-negative]
 plugins: ["../.."]
 expected_outcome: スキルを呼ばず（Tri-SSD の導入も勧めず）、docs/usage.md に --verbose を書き足す。
 context:

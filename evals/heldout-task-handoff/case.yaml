@@ -1,0 +1,33 @@
+schema_version: "1.1"
+name: heldout-task-handoff
+description: セッション終了時の引き継ぎを、置き場（docs/notes/handoff.md）を上書きする形で残す
+tags: [outcome, heldout, task]
+plugins: ["../.."]
+context:
+  scaffold_script: fixture.sh
+execution:
+  max_turns: 20
+  timeout_seconds: 600
+  allowed_tools: [Read, Glob, Grep, Skill]
+  prompt: |
+    今日はここまでにする。T-0005 は AC1 の実装まで終わっていて、AC2 は use_count 列を足すかまだ決めていない。次のセッション向けに残しておいて。
+graders:
+  - name: handoff-updated
+    type: regex
+    target: { source: file, path: docs/notes/handoff.md }
+    pattern: '更新: 2026-10-12 18:00'
+    match: not_contains
+  - name: handoff-mentions-task
+    type: regex
+    target: { source: file, path: docs/notes/handoff.md }
+    pattern: 'T-0005[\s\S]*use_count|use_count[\s\S]*T-0005'
+  - name: handoff-not-accumulated
+    # 引き継ぎは上書きで1つ。日付付きの記録を積み上げない
+    type: regex
+    target: { source: file, path: docs/notes/handoff.md }
+    pattern: '\d{4}-\d{2}-\d{2}'
+    match: 'count:1'
+  - name: no-new-note-files
+    type: file_exists
+    path: 'docs/notes/**'
+    exists: false

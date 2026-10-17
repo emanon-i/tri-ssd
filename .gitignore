@@ -3,3 +3,4 @@ CLAUDE.local.md
 __pycache__/
 *.pyc
 evals/results/
+evals/trigger/cases/

@@ -1,0 +1,34 @@
+schema_version: "1.1"
+name: heldout-setup-adopt
+description: 既存プロジェクトへの導入で、既存文書を残したまま Goal（技術に依存しない目的）と最小限の構成を作る
+tags: [outcome, heldout, setup]
+plugins: ["../.."]
+context:
+  scaffold_script: fixture.sh
+execution:
+  max_turns: 30
+  timeout_seconds: 900
+  allowed_tools: [Read, Glob, Grep, Skill]
+  prompt: |
+    この CLI に Tri-SSD を導入して。目的は「テキストの単語数を素早く正確に数えられる小さな道具」でいい。
+graders:
+  - name: goal-created
+    type: file_exists
+    path: docs/goal.md
+  - name: goal-has-purpose
+    type: regex
+    target: { source: file, path: docs/goal.md }
+    pattern: '単語'
+  - name: goal-without-tech
+    # Goal は実現手段に依存しない
+    type: regex
+    target: { source: file, path: docs/goal.md }
+    pattern: 'argparse|Python|python3'
+    match: not_contains
+  - name: changelog-created
+    type: file_exists
+    path: CHANGELOG.md
+  - name: existing-doc-kept
+    type: regex
+    target: { source: file, path: docs/usage.md }
+    pattern: '--lines'

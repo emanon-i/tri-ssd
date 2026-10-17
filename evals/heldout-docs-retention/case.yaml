@@ -1,0 +1,56 @@
+schema_version: "1.1"
+name: heldout-docs-retention
+description: 値の変更を、その値を書いたすべての箇所で置き換え、同じ数字の別の意味の記述は残し、CHANGELOG に記録する
+tags: [outcome, heldout, docs]
+plugins: ["../.."]
+context:
+  scaffold_script: fixture.sh
+execution:
+  max_turns: 40
+  timeout_seconds: 900
+  allowed_tools: [Read, Glob, Grep, Skill]
+  prompt: |
+    ゴミ箱の保持期間を 7 日にしたい。
+graders:
+  - name: req-updated
+    type: regex
+    target: { source: file, path: docs/requirements.md }
+    pattern: '## REQ-0011[^#]*7 ?日'
+  - name: data-md-replaced
+    type: regex
+    target: { source: file, path: docs/data.md }
+    pattern: '30 日後に物理削除'
+    match: not_contains
+  - name: operations-md-replaced
+    type: regex
+    target: { source: file, path: docs/operations.md }
+    pattern: 'から 30 日経過した Bookmark'
+    match: not_contains
+  - name: glossary-replaced
+    type: regex
+    target: { source: file, path: docs/glossary.md }
+    pattern: '削除後 30 日間'
+    match: not_contains
+  - name: open-task-updated
+    type: regex
+    target: { source: file, path: docs/tasks/T-0007-trash-purge.md }
+    pattern: '30 日経過'
+    match: not_contains
+  - name: other-30-days-kept
+    # セッション失効・ランキングの半減・巡回間隔の「30 日」は別の事実なので変えない
+    type: regex
+    target: { source: file, path: docs/security.md }
+    pattern: 'セッションは 30 日で失効'
+  - name: ranking-30-days-kept
+    type: regex
+    target: { source: file, path: docs/search.md }
+    pattern: '30 日で半減'
+  - name: no-history-in-req
+    type: regex
+    target: { source: file, path: docs/requirements.md }
+    pattern: '以前は|当初|30 ?日から|から ?7 ?日|に変更|に短縮'
+    match: not_contains
+  - name: changelog-recorded
+    type: regex
+    target: { source: file, path: CHANGELOG.md }
+    pattern: '## \[Unreleased\]((?!## \[0\.3\.0\])[\s\S])*7 ?日'

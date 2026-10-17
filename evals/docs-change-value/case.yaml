@@ -1,7 +1,7 @@
 schema_version: "1.1"
 name: docs-change-value
 description: 仕様の値の変更を頼まれたら docs スキルで、Docs を現在形のまま置き換え CHANGELOG に記録する
-tags: [docs, trigger-positive]
+tags: [outcome, dev, docs, trigger-positive]
 plugins: ["../.."]
 expected_outcome: >-
   docs スキルが発火し、「10 件」を書いていた記述（search.md・api.md・進行中の T-0005 の AC）をすべて置き換える。

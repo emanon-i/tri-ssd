@@ -1,7 +1,7 @@
 schema_version: "1.1"
 name: setup-migrate
 description: 旧構成のプロジェクトで移行を頼まれたら setup スキルで、ドライランで計画を見てから適用する
-tags: [setup, trigger-positive]
+tags: [outcome, dev, setup, trigger-positive]
 plugins: ["../.."]
 expected_outcome: >-
   setup スキルが発火し、tri migrate（ドライラン）で計画を確認してから tri migrate --apply を実行する。

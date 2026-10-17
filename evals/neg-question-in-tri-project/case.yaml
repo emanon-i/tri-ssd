@@ -1,7 +1,7 @@
 schema_version: "1.1"
 name: neg-question-in-tri-project
 description: Tri-SSD プロジェクトの中でも、一般的なプログラミングの質問ではスキルを呼ばない
-tags: [trigger-negative]
+tags: [outcome, dev, trigger-negative]
 plugins: ["../.."]
 expected_outcome: スキルを呼ばず、質問に直接答える。
 context:
