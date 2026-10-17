@@ -106,6 +106,8 @@ class TaskTest(ProjectCase):
         self.assertEqual([a.label for a in acs], ["AC1", "AC2"])
         self.assertEqual(acs[0].commands, ["python3 -m unittest x"])
         self.assertTrue(acs[1].manual)
+        acs = tasks.parse_acs(task_text("T-0010", "true", "手動: `claude plugin eval` の結果を見る"))
+        self.assertTrue(acs[1].manual)  # 手動の確認方法に書いたコマンドは実行しない
 
     def test_verify_records_evidence(self):
         self.write("docs/tasks/T-0010-x.md", task_text("T-0010", "echo ok"))

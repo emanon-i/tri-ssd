@@ -1,9 +1,9 @@
 ---
-code: [tests/eval_context.py, tests/simulate.py, evals/]
+code: [tests/eval_context.py, tests/simulate.py]
 ---
 # 評価
 
-Context Resolver（REQ-0002）と長期運用（REQ-0004・REQ-0006）、Skill の発火と効果の実測結果。数値は `tests/eval_context.py` が生成し、手で書き換えない。
+Context Resolver（REQ-0002）と長期運用（REQ-0004・REQ-0006）の実測結果。Skill の発火と効果は [Skill の評価](skill-evaluation.md)。数値は `tests/eval_context.py` が生成し、手で書き換えない。
 
 ## 方法
 
@@ -57,21 +57,10 @@ Context Resolver（REQ-0002）と長期運用（REQ-0004・REQ-0006）、Skill �
 | 2 | 新しいセッションで「ゴミ箱の保持期間を 14 日に」→ 仕様変更・実装・CHANGELOG・引き継ぎ | 完了。前のセッションの引き継ぎ（未解決の問い）を `status` から把握した。「30 日」を書いていた 4 文書を置き換え、値を `REQ-0011` の1箇所に集約して他を ID 参照にした。履歴汚染 0、CHANGELOG に理由付きで記録、`check --changed` エラー 0。指摘 13 件のうち、コード内 ID のグラフ化・impact の具体性重み付け・`--query` の案内・日本語題のファイル名・未リリース CHANGELOG の訂正許可などを修正した |
 | 3 | 「`T-0006` をやって。何をどう確かめたか報告して」→ 実装・検証・報告・完了 | 完了。ゲートの拒否 0 回。報告だけで何を・どう確かめ・どう判断したかが分かった。受け入れ条件の規則の矛盾（要所だけ／全要素を覆う）を1つの規則に統一し、報告の「満たす仕様」の抜粋が誤解を招く点を直した |
 
-## Skill の発火と効果
-
-`evals/` のケースを `claude plugin eval` で実行し、スキルあり（プラグインを読み込む）となし（プラグイン無しの同じエージェント）を比べた。
-
-- **ケース**（題材は `tests/fixtures/linkbox` と `tests/fixtures/v5project` を各実行の作業ディレクトリに複製する）:
-  - 発火すべき 3: `task-continue`（「`T-0005` の続きをやって」）・`docs-change-value`（「タグ補完の候補数の上限を 20 件に変えたい」）・`setup-migrate`（旧構成で「移行して」）
-  - 発火すべきでない 2: `neg-question-in-tri-project`（Tri-SSD プロジェクト内での一般的な Python の質問）・`neg-docs-other-repo`（Tri-SSD でないリポジトリでの「ドキュメントを更新して」）
-- **採点**: 機械で判定できるものは最終ファイルの正規表現・ファイルの有無・ツール呼び出しで判定し、文書とテストの中身の妥当性だけを LLM（haiku、3 票の多数決）で判定する。Skill の発火・プラグインのディレクトリへの cd・`tri check` の実行は、スキルあり側だけの指標として点数から外す
-- **`tri check`**: eval はコマンドの終了コードを採点できないため、各実行の作業ディレクトリを残し（`--keep-temp`）、あとから `tri check` を実行して数えた
-- **実行**: `claude plugin eval . --scaffold --allow-tools Bash Write Edit --runs 3`。子セッションのモデルは既定（claude-sonnet-5-5）。Linux では Bash のサンドボックスに bubblewrap と socat が要る
-
 ## 未達・限界
 
 - トークン数は推定値で、Claude の実トークナイザでの計測はしていない
 - 評価ケースは 7 件で、正解集合は作者 1 人の判定。大規模な実プロジェクトでの計測はしていない
 - 履歴汚染の検出は言い回しの候補提示で、意味の判断（本当に経緯か）はエージェントに依存する
 - 同じ事実を別の文で書いた重複（例: 「30 日」が 4 文書に散在）は段落の類似度では検出できない。試行 2 ではエージェントが context と grep で見つけた
-- 実エージェントでの試行は 2 回（同じフィクスチャ）。フックは Claude Code 上での発火を確認しておらず、CLI のフック用モードをテストで確認した
+- サブエージェントでの試行は 3 回（同じフィクスチャ）。フックは Claude Code 上での発火を確認しておらず、CLI のフック用モードをテストで確認した

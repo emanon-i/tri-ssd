@@ -7,7 +7,7 @@ AI コーディングエージェントによる長期開発のための、知�
 - **文書を腐らせない**: 参照切れ・履歴汚染・重複・肥大化を機械的に検出し、Docs を現在形のまま保つ
 - **完了を証拠で決める**: 受け入れ条件ごとの検証証跡と、証跡取得後のコード変更検知による完了ゲート
 
-設計の詳細は [docs/knowledge-model.md](docs/knowledge-model.md)（置き場と寿命）・[docs/writing-rules.md](docs/writing-rules.md)（書き方）・[docs/architecture.md](docs/architecture.md)（仕組み）・[docs/evaluation.md](docs/evaluation.md)（実測）。
+設計の詳細は [docs/knowledge-model.md](docs/knowledge-model.md)（置き場と寿命）・[docs/writing-rules.md](docs/writing-rules.md)（書き方）・[docs/architecture.md](docs/architecture.md)（仕組み）・[docs/evaluation.md](docs/evaluation.md)・[docs/skill-evaluation.md](docs/skill-evaluation.md)（実測）。
 
 ## インストール
 
@@ -118,7 +118,7 @@ PH・F の ID は互換のため引き続き有効。新しい Task は `T-nnnn`
 python3 -m unittest discover -s tests -p "test_*.py"   # 自動テスト
 python3 tests/simulate.py --cycles 10                   # 長期運用シミュレーション
 python3 tests/eval_context.py                           # コンテキスト効率の実測
-claude plugin eval . --scaffold --allow-tools Bash Write Edit   # Skill の発火と効果（有料。docs/evaluation.md）
+claude plugin eval . --scaffold --allow-tools Bash Write Edit   # Skill の発火と効果（有料。docs/skill-evaluation.md）
 ```
 
 このリポジトリ自身も Tri-SSD で管理している（`docs/goal.md`・`docs/tasks/`）。変更履歴は [CHANGELOG.md](CHANGELOG.md)。

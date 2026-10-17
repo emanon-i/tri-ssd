@@ -43,7 +43,7 @@ Tri-SSD: Goal（docs/goal.md）・Docs（docs/ のあるべき状態）・Tasks�
 ## 旧 Tri-SSD（v5 以前）からの移行
 
 1. `tri migrate` — ドライラン。移動・変換の計画を表示する
-2. ユーザーに計画を見せて了承を得てから `tri migrate --apply`
+2. ユーザーに計画を見せて了承を得てから `tri migrate --apply`（依頼で適用まで任されていれば、計画を示してそのまま適用する）
 
 | 旧 | 新 |
 |---|---|

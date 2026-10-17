@@ -29,6 +29,7 @@ VERIFY_RE = re.compile(r"^\s+[-*]\s*(?:検証|verify)\s*[:：]\s*(.*)$", re.I)
 EVIDENCE_RE = re.compile(
     r"^- (\d{4}-\d{2}-\d{2}(?: \d{2}:\d{2})?) (AC\d+) (PASS|FAIL)\b(.*?)(?:\s+tree=([0-9a-f]+|none))?\s*$")
 CMD_RE = re.compile(r"`([^`]+)`")
+MANUAL_RE = re.compile(r"手動|manual", re.I)  # 手動の確認方法に書いたコマンドは実行しない
 
 
 @dataclass
@@ -100,7 +101,7 @@ def parse_acs(text: str) -> list[AC]:
             vm = VERIFY_RE.match(lines[j])
             if vm:
                 ac.verify = md.COMMENT_RE.sub("", vm.group(1)).strip()
-                ac.commands = CMD_RE.findall(ac.verify)
+                ac.commands = [] if MANUAL_RE.match(ac.verify) else CMD_RE.findall(ac.verify)
                 break
             if CHECK_RE.match(lines[j]) or not lines[j].startswith((" ", "\t")):
                 break
