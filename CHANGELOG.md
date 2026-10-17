@@ -19,6 +19,10 @@ Tri-SSD (Tri-Layer Slice Spec Driven) フレームワークの変更履歴です
 
 - docs スキルの発火語: 評価の依頼文を写した例（「上限を 20 件に」）を、意図の言い方（仕様で決めた値・方式・方針を変えたい）に置き換え（T-0015）
 
+### Fixed
+
+- setup スキル: 実装の無い読み取り記録のフック（.tri-ssd/reads.log）を説明していた記述を削除
+
 ## [6.0.1] - 2026-10-17
 
 `claude plugin eval` による Skill の実測（docs/skill-evaluation.md）で見つかった原因の修正。

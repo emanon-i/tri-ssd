@@ -152,6 +152,7 @@ allowed-tools: Read, Write, Edit, Glob, Grep
 - [ ] 本文が500行未満
 - [ ] 置き場の規約・採番ロジックを複製していない（knowledge-model.md / CLI を参照している）
 - [ ] スキルが使う `tri` のサブコマンドが実在する（`tests/test_plugin.py`）
+- [ ] 説明文を変えたら発火評価、手順を変えたら成果の評価を回した（[Skill の評価](skill-evaluation.md)）
 
 ### リリース前
 

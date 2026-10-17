@@ -119,7 +119,8 @@ python3 -m unittest discover -s tests -p "test_*.py"   # 自動テスト
 python3 tests/simulate.py --cycles 10                   # 長期運用シミュレーション
 python3 tests/eval_context.py                           # コンテキスト効率の実測
 python3 evals/trigger/build.py                          # 発火評価のケースを生成（evals/trigger/queries.json から）
-claude plugin eval . --tag trigger --scaffold --allow-tools Bash Write Edit   # Skill の発火と成果（有料。--tag heldout で成果。docs/skill-evaluation.md）
+claude plugin eval . --tag trigger --ablation none --scaffold --allow-tools Bash Write Edit   # Skill の発火（有料）
+claude plugin eval . --tag heldout --scaffold --allow-tools Bash Write Edit                   # Skill の成果をプラグイン無しと比較（有料）
 ```
 
 このリポジトリ自身も Tri-SSD で管理している（`docs/goal.md`・`docs/tasks/`）。変更履歴は [CHANGELOG.md](CHANGELOG.md)。

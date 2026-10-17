@@ -21,6 +21,7 @@ hooks/           # プラグインのフック（SessionStart・PostToolUse）
 templates/       # Goal・Task・CHANGELOG の雛形（書式の正）
 docs/            # フレームワーク仕様（knowledge-model / writing-rules / architecture）兼、このリポジトリ自身の Tri-SSD 知識
 tests/           # unittest・長期運用シミュレーション・コンテキスト効率の評価・フィクスチャ
+evals/           # claude plugin eval のケース（trigger/ 発火評価・heldout-* 成果の評価・dev の 5 件）
 .claude-plugin/  # plugin.json / marketplace.json
 .claude/rules/   # skills/ 編集時に自動注入される規約
 ```
@@ -52,6 +53,7 @@ tests/           # unittest・長期運用シミュレーション・コンテ�
 - **ID は CLI で採番**: `python3 scripts/tri.py id REQ` / `task new`（自前で採番しない）
 - **変更時はバージョン更新を忘れない**: `CHANGELOG.md`、`.claude-plugin/plugin.json`、`.claude-plugin/marketplace.json` のバージョンを同期
 - **評価表の更新**: 取得ロジックを変えたら `python3 tests/eval_context.py --write` で docs/evaluation.md を更新する
+- **Skill の評価**: スキルの説明文・手順を変えたら `python3 evals/trigger/build.py` のあと `claude plugin eval . --tag trigger`（発火）と `--tag heldout`（成果）を回し、docs/skill-evaluation.md を実測値で更新する（有料。方法は同文書）
 
 ## プラグイン開発原則
 
