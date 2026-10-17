@@ -380,8 +380,8 @@ def impact(p: Project, paths: list[str], doc_lines: dict[str, set[int]] | None =
 
     def add(key: str, score: float, reason: str):
         kind = g.kind(key)
-        if kind in HISTORY_KINDS or kind == "note":
-            return
+        if kind in HISTORY_KINDS or kind == "note" or (kind == "doc" and p.doc_of(key).history_allowed):
+            return  # 履歴（ADR 等）は書き換えないので見直し対象にしない
         if kind == "task":
             tasks.setdefault(key.split("#")[0], reason)
             return

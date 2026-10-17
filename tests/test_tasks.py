@@ -1,7 +1,8 @@
 """Task の採番・検証証跡・完了ゲート・アーカイブ。"""
+import json
 import unittest
 
-from helpers import ProjectCase
+from helpers import ProjectCase, git
 from trissd import tasks
 
 
@@ -9,6 +10,54 @@ def task_text(id_, cmd1="true", cmd2="手動: 画面で確認", refs="REQ-0005")
     return (f"---\nid: {id_}\nstatus: open\nrefs: [{refs}]\ncode: [src/api/import.py]\n---\n# {id_} 取り込み\n\n"
             "## 目的の状態\n\nREQ-0005 を満たす。\n\n## 受け入れ条件\n\n"
             f"- [ ] AC1: 取り込める\n  - 検証: `{cmd1}`\n- [ ] AC2: 表示される\n  - 検証: {cmd2}\n\n## 検証記録\n")
+
+
+class DiscoverTest(ProjectCase):
+    """書かれていない依存の候補: Task の間に変更・参照したが context に入っていなかった Docs。"""
+
+    def make_closable(self):
+        self.tri("task", "start", "T-0007")
+        self.edit("docs/tasks/T-0007-trash-purge.md", "`python3 -m unittest tests.test_trash`", "`true`")
+
+    def test_start_records_base(self):
+        self.tri("task", "start", "T-0007")
+        text = self.read("docs/tasks/T-0007-trash-purge.md")
+        self.assertRegex(text, r"started: \d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}")
+        self.assertRegex(text, r"base: [0-9a-f]{12}")
+
+    def test_changed_code_described_outside_context(self):
+        self.make_closable()
+        self.write("src/storage/schema.sql", "CREATE TABLE bookmarks (id INTEGER, deleted_at TEXT);\n")
+        self.tri("task", "verify", "T-0007")
+        code, out = self.tri("task", "close", "T-0007")
+        self.assertEqual(code, 0, out)
+        self.assertIn("書かれていない依存の候補", out)
+        self.assertIn("docs/data.md#データ設計", out)  # schema.sql を名指しする節
+
+    def test_reads_outside_context(self):
+        self.make_closable()
+        lines = self.read("docs/data.md").splitlines()
+        start = next(i for i, x in enumerate(lines) if x.startswith("## 整合性")) + 1
+        for payload in ({"tool_name": "Read", "tool_input": {"file_path": str(self.root / "docs/data.md"),
+                                                               "offset": start, "limit": 4}},
+                        {"tool_name": "Bash", "tool_input": {"command": "grep -n '^#' docs/security.md"}},
+                        {"tool_name": "Read", "tool_input": {"file_path": str(self.root / "src/sync/merge.py")}}):
+            payload["cwd"] = str(self.root)
+            self.assertEqual(self.tri("track", "--hook", stdin=json.dumps(payload)), (0, ""))
+        self.tri("task", "verify", "T-0007")
+        code, out = self.tri("task", "close", "T-0007")
+        self.assertEqual(code, 0, out)
+        self.assertIn("docs/data.md#整合性", out)
+        self.assertIn("docs/security.md  ← この Task の間に文書全体を参照", out)
+        self.assertNotIn("merge.py", out)
+        self.assertNotIn(".tri-ssd", git(self.root, "status", "--porcelain"))
+
+    def test_nothing_reported_when_context_was_enough(self):
+        self.make_closable()
+        self.tri("task", "verify", "T-0007")
+        code, out = self.tri("task", "close", "T-0007")
+        self.assertEqual(code, 0, out)
+        self.assertNotIn("書かれていない依存の候補", out)
 
 
 class TaskTest(ProjectCase):

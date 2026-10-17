@@ -41,7 +41,7 @@ Skills は [知識モデル](knowledge-model.md) と [記載規約](writing-rule
 | link | Markdown リンク・実在する `docs/*.md` のインラインコード |
 | depends | frontmatter `refs` / `depends` / `requires` |
 | code | 実在するパスのインラインコード・frontmatter `code` |
-| code-id | コード（docs/・CHANGELOG 以外の git 管理ファイル）に書かれた ID（`git grep` で毎回求める） |
+| code-id | コード（docs/ と Markdown 以外の git 管理ファイル）に書かれた ID（`git grep` で毎回求める） |
 
 ID の定義: Task は frontmatter `id`、REQ は Goal・Docs の見出しの先頭の ID（旧形式の `- **ID**: REQ-nnnn` 行も可）。
 
@@ -82,6 +82,7 @@ ID の定義: Task は frontmatter `id`、REQ は Goal・Docs の見出しの先
 - 文書の変更: 変更行を含むセクション（`--git` は差分の行範囲から特定）を参照・リンクするセクション（0.9）
 - 上記を参照するセクションまで 1 段だけ間接的に広げる（0.6 倍）
 - 進行中 Task は別に列挙し、Docs から参照されない変更パスは対応不要の候補として示す
+- ADR など履歴を書く文書（`kind: adr|history`・`docs/adr/`）は書き換えないので対象にしない
 
 ## 検査
 
@@ -107,6 +108,15 @@ ID の定義: Task は frontmatter `id`、REQ は Goal・Docs の見出しの先
 
 `--force` は理由を検証記録に残して完了させる。
 
+### 書かれていない依存の候補
+
+完了時に、context が選ばなかったのにこの Task で必要になった Docs を示す（ゲートではなく提案）。基準は `task start`（または最初の `task verify`）が frontmatter に記録する `started`（時刻）と `base`（コミット）。
+
+- 変更: `base` から現在までに差分のあるコードを、名指し・包含して記述するセクション（逆引きと同じ規則）
+- 参照: `started` 以降に Read・Bash で参照した `docs/` の節（`.tri-ssd/reads.log`。git 管理外）
+
+エージェントは必要だったものを Task の `refs` や仕様本文のリンクとして書き足す。次回から context に入る。
+
 ## フック
 
 
@@ -114,6 +124,9 @@ ID の定義: Task は frontmatter `id`、REQ は Goal・Docs の見出しの先
 |---|---|
 | SessionStart（startup・resume・clear・compact） | `status --hook`: Tri-SSD プロジェクトなら状況を出力し文脈に入れる（REQ-0007）。そうでなければ何も出さない |
 | PostToolUse（Edit・Write・MultiEdit） | `check --hook`: 編集した `docs/` の文書に関する指摘だけを `additionalContext` で返す |
+| PostToolUse（Read・Bash） | `track --hook`: `docs/` の文書の参照を `.tri-ssd/reads.log` に記録する（出力なし） |
+
+フックは `python3`、次に `python` で実行し、どちらも無ければ何もしない（Skill の手順だけで全機能が使える。フックは自動化の保険）。
 
 ## テスト戦略
 

@@ -19,7 +19,8 @@ Tri-SSD (Tri-Layer Slice Spec Driven) フレームワークの変更履歴です
 - **検査**（`check`）: 参照切れ（ID・リンク・見出しアンカー・frontmatter）・ID 重複・履歴汚染の疑い（日英の言い回し・日付行・取り消し線）・重複記述・肥大化・完了済み Task を指す計画マーカー・Task 書式。`--changed` で CHANGELOG の記録漏れ・追記偏重・CHANGELOG の書き換え
 - **Task と完了ゲート**: AC ごとの検証コマンド実行と証跡記録（`task verify`・`task record`）、作業ツリー指紋による古い証跡の検出、`task close` のゲート
 - **Note**: 分類不要の追記・上書きの引き継ぎ・整理候補の提示・git 管理外のローカル領域（`.tri-ssd/`）
-- **フック**: SessionStart で現在位置を注入、PostToolUse で編集した Docs の検査結果を返す
+- **フック**: SessionStart で現在位置を注入、PostToolUse で編集した Docs の検査結果を返し、docs/ の参照を記録。Python が無い環境では何もしない
+- **書かれていない依存の候補**: `task close` が、Task の間に変更したコードを記述する Docs と参照した Docs のうち context に入っていなかったものを示す
 - **旧構成からの移行**（`migrate`。既定はドライラン）
 - 自動テスト（unittest）・長期運用シミュレーション（`tests/simulate.py`）・コンテキスト効率の実測（`tests/eval_context.py`、docs/evaluation.md）
 

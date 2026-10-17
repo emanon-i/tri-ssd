@@ -33,7 +33,7 @@ if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8")
     sys.stderr.reconfigure(encoding="utf-8")
 
-from trissd import admin, check, md, notes, resolve, tasks  # noqa: E402
+from trissd import admin, check, discover, md, notes, resolve, tasks  # noqa: E402
 from trissd.project import Project  # noqa: E402
 
 SCRIPT = Path(__file__).resolve().as_posix()
@@ -240,6 +240,14 @@ def cmd_check(a):
     return 1 if errs or (a.strict and issues) else 0
 
 
+def cmd_track(a):
+    data = _stdin_json()
+    root = Path(data.get("cwd") or a.root)
+    if admin.is_project(root):
+        discover.track(root, data)
+    return 0
+
+
 def cmd_gaps(a):
     p = Project(a.root)
     mk = admin.marker_list(p)
@@ -295,6 +303,8 @@ def cmd_task(a):
         print(tasks.record(p, a.id, a.ac, a.result, a.note))
         return 0
     if a.tcmd in ("close", "drop"):
+        doc = tasks.find_task(p, a.id)
+        found = discover.discoveries(p, doc) if doc and a.tcmd == "close" else []
         fails, dest = tasks.close(p, a.id, a.force if a.tcmd == "close" else a.reason, drop=a.tcmd == "drop")
         if dest is None:
             print(f"# {a.id} は完了条件を満たしていません")
@@ -303,6 +313,11 @@ def cmd_task(a):
         if fails:
             print("⚠️  ゲート未達のまま強制完了:\n" + "\n".join(f"- {f}" for f in fails))
         print(f"{a.id}: {'中止' if a.tcmd == 'drop' else '完了'} → {dest}")
+        if found:
+            print("\n## context に入っていなかったが、この Task で変更・参照に関係した Docs（書かれていない依存の候補）")
+            for key, why in found:
+                print(f"- {key}  ← {why}")
+            print("必要だったものは Task の refs や仕様本文のリンクとして書き足す（次回から context に入る）。無関係なら無視してよい")
         p2 = Project(a.root)
         related = [e for e in notes.entries(p2) if a.id in e.refs]
         if related:
@@ -413,6 +428,10 @@ def build_parser() -> argparse.ArgumentParser:
     s.add_argument("--strict", action="store_true", help="警告でも終了コード 1")
     s.add_argument("--json", action="store_true")
     s.set_defaults(fn=cmd_check)
+
+    s = sub.add_parser("track", help="PostToolUse フック用: docs/ の参照を .tri-ssd/reads.log に記録")
+    s.add_argument("--hook", action="store_true")
+    s.set_defaults(fn=cmd_track)
 
     s = sub.add_parser("gaps", help="Docs の差分マーカー（計画・保留・未確定・未検証）と未追跡 REQ の一覧")
     s.set_defaults(fn=cmd_gaps)

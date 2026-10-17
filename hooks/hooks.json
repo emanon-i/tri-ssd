@@ -1,11 +1,15 @@
 {
-  "description": "Tri-SSD: セッション開始時に現在位置を文脈に入れ、docs/ の編集直後に検査結果を返す",
+  "description": "Tri-SSD: セッション開始時に現在位置を文脈に入れ、docs/ の編集直後に検査結果を返し、docs/ の参照を記録する。Python が見つからなければ何もしない",
   "hooks": {
     "SessionStart": [
       {
         "matcher": "startup|resume|clear|compact",
         "hooks": [
-          { "type": "command", "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/scripts/tri.py\" status --hook", "timeout": 30 }
+          {
+            "type": "command",
+            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/scripts/tri.py\" status --hook 2>/dev/null || python \"${CLAUDE_PLUGIN_ROOT}/scripts/tri.py\" status --hook 2>/dev/null || true",
+            "timeout": 30
+          }
         ]
       }
     ],
@@ -13,7 +17,21 @@
       {
         "matcher": "Edit|Write|MultiEdit",
         "hooks": [
-          { "type": "command", "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/scripts/tri.py\" check --hook", "timeout": 30 }
+          {
+            "type": "command",
+            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/scripts/tri.py\" check --hook 2>/dev/null || python \"${CLAUDE_PLUGIN_ROOT}/scripts/tri.py\" check --hook 2>/dev/null || true",
+            "timeout": 30
+          }
+        ]
+      },
+      {
+        "matcher": "Read|Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/scripts/tri.py\" track --hook 2>/dev/null || python \"${CLAUDE_PLUGIN_ROOT}/scripts/tri.py\" track --hook 2>/dev/null || true",
+            "timeout": 10
+          }
         ]
       }
     ]

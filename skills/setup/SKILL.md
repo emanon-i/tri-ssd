@@ -63,10 +63,11 @@ Tri-SSD: Goal（docs/goal.md）・Docs（docs/ のあるべき状態）・Tasks�
 
 ## フック
 
-プラグインは2つのフックを登録する（`hooks/hooks.json`）。Tri-SSD プロジェクト以外では何も出力しない。
+プラグインはフックを登録する（`hooks/hooks.json`）。Tri-SSD プロジェクト以外や Python が見つからない環境では何もしない（Skill の手順だけで全機能が使える）。
 
 - セッション開始時: `tri status` の要約を文脈に入れる
 - `docs/` の Markdown を編集した直後: その文書への検査指摘を返す
+- `docs/` の文書を読んだとき: 参照を `.tri-ssd/reads.log` に記録する（Task 完了時の「書かれていない依存の候補」に使う）
 
 ## 完了後の案内
 

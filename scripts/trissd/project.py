@@ -208,14 +208,14 @@ class Project:
         return None
 
     def code_ids(self) -> dict[str, list[str]]:
-        """コード（docs/・CHANGELOG 以外の git 管理ファイル）に書かれた ID → パス。`git grep` で求める。"""
+        """コード（docs/・Markdown 以外の git 管理ファイル）に書かれた ID → パス。`git grep` で求める。"""
         if hasattr(self, "_code_ids"):
             return self._code_ids
         import subprocess
         self._code_ids: dict[str, list[str]] = {}
         try:
             r = subprocess.run(["git", "grep", "-I", "-o", "-E", r"\b(REQ|T|PH|F)-[0-9]{4}\b", "--", ".",
-                                ":(exclude)docs", ":(exclude)CHANGELOG.md", ":(exclude).tri-ssd"],
+                                ":(exclude)docs", ":(exclude)*.md", ":(exclude).tri-ssd"],
                                cwd=self.root, capture_output=True, text=True, timeout=30)
         except (OSError, subprocess.TimeoutExpired):
             return self._code_ids

@@ -242,11 +242,31 @@ def new(p: Project, title: str, refs: list[str], code: list[str], goal: str = ""
     return rel
 
 
+def _git_head(root: Path) -> str | None:
+    try:
+        r = subprocess.run(["git", "rev-parse", "HEAD"], cwd=root, capture_output=True, text=True, timeout=30)
+    except (OSError, subprocess.TimeoutExpired):
+        return None
+    return r.stdout.strip()[:12] if r.returncode == 0 else None
+
+
+def _mark_started(p: Project, text: str) -> str:
+    """着手時刻と着手時点のコミットを記録する（完了時に「この Task の間の変更・参照」を求める基準）。"""
+    fm, _ = md.parse_frontmatter(text)
+    if not fm.get("started"):
+        text = md.set_fm_value(text, "started", dt.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+        head = _git_head(p.root)
+        if head:
+            text = md.set_fm_value(text, "base", head)
+    return text
+
+
 def set_status(p: Project, id_: str, status: str) -> str:
     doc = find_task(p, id_)
     if not doc:
         raise SystemExit(f"error: アクティブな Task {id_} が見つかりません")
-    _write(p, doc.path, md.set_fm_value(doc.text, "status", status))
+    text = md.set_fm_value(doc.text, "status", status)
+    _write(p, doc.path, _mark_started(p, text) if status == "active" else text)
     return doc.path
 
 
@@ -303,7 +323,7 @@ def verify(p: Project, id_: str, only: list[str] | None = None, timeout: int = 9
         text = _append_evidence(text, add)
     if str(doc.fm.get("status")) == "open":
         text = md.set_fm_value(text, "status", "active")
-    _write(p, doc.path, text)
+    _write(p, doc.path, _mark_started(p, text))
     return results
 
 
