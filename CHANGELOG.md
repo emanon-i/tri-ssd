@@ -6,6 +6,19 @@ Tri-SSD (Tri-Layer Slice Spec Driven) フレームワークの変更履歴です
 
 ## [Unreleased]
 
+## [6.0.2] - 2026-10-17
+
+評価の手法を skill-creator・Anthropic の評価ガイドに合わせて測り直した（docs/skill-evaluation.md）。
+
+### Added
+
+- 発火評価 `evals/trigger/`: 3 スキルの振り分けを 40 件の依頼で測る。学習・検証の分割を作成時に固定し、検証側で報告する（T-0015）
+- 採点を先に固定した成果の評価 `evals/heldout-*`（スキルごとに 2 件）。既存の 5 件は探索用（dev）と明記（T-0015）
+
+### Changed
+
+- docs スキルの発火語: 評価の依頼文を写した例（「上限を 20 件に」）を、意図の言い方（仕様で決めた値・方式・方針を変えたい）に置き換え（T-0015）
+
 ## [6.0.1] - 2026-10-17
 
 `claude plugin eval` による Skill の実測（docs/skill-evaluation.md）で見つかった原因の修正。
