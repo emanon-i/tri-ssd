@@ -6,6 +6,20 @@ Tri-SSD (Tri-Layer Slice Spec Driven) フレームワークの変更履歴です
 
 ## [Unreleased]
 
+## [6.0.1] - 2026-10-17
+
+`claude plugin eval` による Skill の実測（docs/evaluation.md「Skill の発火と効果」）で見つかった原因の修正。
+
+### Added
+
+- Skill の評価ケース evals/（claude plugin eval）: 発火すべき 3・すべきでない 2 のケースで、発火の精度とプラグイン無しとの点数差を測る（T-0014）
+
+### Fixed
+
+- docs・task スキルの発火条件: 仕様の値を変える依頼（「上限を 20 件に」）が task に振り分けられ、CHANGELOG の記録漏れと値の重複が残っていた。Tri-SSD でないリポジトリの文書更新で docs が発火していた（T-0014）
+- Skill の共通コンテキスト: CLI はカレントディレクトリのプロジェクトを扱うので、プロジェクトのルートで絶対パスのまま実行すると明記（プラグインのディレクトリへ cd して実行し、別のプロジェクトを操作しうる例があった）（T-0014）
+- migrate: フォルダ形式のフェーズを統合するとき、機能の節を検証記録の節の下に入れて AC が読まれなかった（T-0014）
+
 ## [6.0.0] - 2026-10-16
 
 知識ライフサイクル管理とコンテキスト最適化のハーネスへ再設計（破壊的変更）。判断の背景は docs/adr/0001-knowledge-harness.md と docs/adr/0002-places-with-lifetimes.md。

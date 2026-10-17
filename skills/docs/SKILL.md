@@ -1,6 +1,6 @@
 ---
 description: Tri-SSD プロジェクト（docs/goal.md がある）の Goal と Docs（あるべき状態を定める文書）を作成・改訂する。古い記述を残さず置き換え、意味のある変更を CHANGELOG に記録し、参照切れ・履歴汚染・重複を CLI で検査する更新プロトコルを実行する。
-when_to_use: Tri-SSD プロジェクトで、仕様を書いて・設計を変えたい・方針が変わった・ドキュメントを更新して・ドキュメントを整理して・Goal を決めたい・要求を追加して・この判断を記録して・文書が古い・ドキュメントが肥大化している、と言われたとき。Task 完了時に Docs の見直しが必要なとき。英語では update the spec / revise docs / record decision。実装作業・作業メモ・引き継ぎは task を使う。docs/goal.md の無いリポジトリの文書更新には使わない（導入を頼まれたときだけ setup）。
+when_to_use: Tri-SSD プロジェクトで、仕様を書いて・設計を変えたい・仕様の値を変えたい（「上限を 20 件に」「保持期間を 14 日に」など）・方針が変わった・ドキュメントを更新して・ドキュメントを整理して・Goal を決めたい・要求を追加して・この判断を記録して・文書が古い・ドキュメントが肥大化している、と言われたとき。Task 完了時に Docs の見直しが必要なとき。英語では update the spec / revise docs / record decision。実装作業・作業メモ・引き継ぎは task を使う。docs/goal.md の無いリポジトリの文書更新には使わない（導入を頼まれたときだけ setup）。
 argument-hint: "[変更内容 | 対象文書] - 何をどう変えるか"
 allowed-tools: Read, Edit, Write, Glob, Grep, Bash
 ---

@@ -118,6 +118,7 @@ PH・F の ID は互換のため引き続き有効。新しい Task は `T-nnnn`
 python3 -m unittest discover -s tests -p "test_*.py"   # 自動テスト
 python3 tests/simulate.py --cycles 10                   # 長期運用シミュレーション
 python3 tests/eval_context.py                           # コンテキスト効率の実測
+claude plugin eval . --scaffold --allow-tools Bash Write Edit   # Skill の発火と効果（有料。docs/evaluation.md）
 ```
 
 このリポジトリ自身も Tri-SSD で管理している（`docs/goal.md`・`docs/tasks/`）。変更履歴は [CHANGELOG.md](CHANGELOG.md)。
