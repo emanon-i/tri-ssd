@@ -1,0 +1,282 @@
+[
+ {
+  "id": "task-01",
+  "expect": "task",
+  "workspace": "linkbox",
+  "split": "train",
+  "query": "T-0007 のゴミ箱自動削除やっちゃいたい。deleted_at から30日過ぎたやつを消すワーカーね"
+ },
+ {
+  "id": "task-02",
+  "expect": "task",
+  "workspace": "linkbox",
+  "split": "train",
+  "query": "昨日どこまで進んだっけ…続きからお願い"
+ },
+ {
+  "id": "task-03",
+  "expect": "task",
+  "workspace": "linkbox",
+  "split": "validation",
+  "query": "インポートでブラウザのフォルダ階層がタグにならないっぽい。src/api/import.py のあたり直してほしい"
+ },
+ {
+  "id": "task-04",
+  "expect": "task",
+  "workspace": "linkbox",
+  "split": "validation",
+  "query": "T-0005 の AC1、テストが pass しか書いてないのに気づいた。ちゃんと AND 検索を確かめるテストにして検証し直して"
+ },
+ {
+  "id": "task-05",
+  "expect": "task",
+  "workspace": "linkbox",
+  "split": "train",
+  "query": "今日はここで切り上げるわ。明日の自分が迷わないように状況まとめて残しといて"
+ },
+ {
+  "id": "task-06",
+  "expect": "task",
+  "workspace": "linkbox",
+  "split": "train",
+  "query": "次なにやればいい？"
+ },
+ {
+  "id": "task-07",
+  "expect": "task",
+  "workspace": "linkbox",
+  "split": "train",
+  "query": "同期のマージで同じURLのブックマークが二重にできるってバグ報告がきた。再現させて直して"
+ },
+ {
+  "id": "task-08",
+  "expect": "task",
+  "workspace": "linkbox",
+  "split": "validation",
+  "query": "T-0006 たぶん終わってるから完了扱いにしといて"
+ },
+ {
+  "id": "task-09",
+  "expect": "task",
+  "workspace": "linkbox",
+  "split": "validation",
+  "query": "use_count 列は足さない方針にした、って T-0005 にメモしておいて"
+ },
+ {
+  "id": "task-10",
+  "expect": "task",
+  "workspace": "linkbox",
+  "split": "train",
+  "query": "search.md のタグ検索の仕様どおりに実装を進めて。補完もね"
+ },
+ {
+  "id": "docs-01",
+  "expect": "docs",
+  "workspace": "linkbox",
+  "split": "train",
+  "query": "ゴミ箱の保持期間、30日は長いってフィードバックが来た。7日にしたい"
+ },
+ {
+  "id": "docs-02",
+  "expect": "docs",
+  "workspace": "linkbox",
+  "split": "train",
+  "query": "全文検索のトークナイザ、trigram をやめて bigram にする方針になった。設計に反映しといて"
+ },
+ {
+  "id": "docs-03",
+  "expect": "docs",
+  "workspace": "linkbox",
+  "split": "validation",
+  "query": "エクスポートに CSV も欲しいって要望があった。要求として追加して"
+ },
+ {
+  "id": "docs-04",
+  "expect": "docs",
+  "workspace": "linkbox",
+  "split": "validation",
+  "query": "docs/search.md と docs/api.md で補完の件数の書き方が食い違ってない？整理して"
+ },
+ {
+  "id": "docs-05",
+  "expect": "docs",
+  "workspace": "linkbox",
+  "split": "validation",
+  "query": "なんで SQLite FTS にしたのか後から分かるように、判断を記録しておいて"
+ },
+ {
+  "id": "docs-06",
+  "expect": "docs",
+  "workspace": "linkbox",
+  "split": "validation",
+  "query": "Goal の成功状態に、オフラインでも検索できることを入れたい"
+ },
+ {
+  "id": "docs-07",
+  "expect": "docs",
+  "workspace": "linkbox",
+  "split": "train",
+  "query": "インポートの1ファイルの上限を 50MB に上げたい"
+ },
+ {
+  "id": "docs-08",
+  "expect": "docs",
+  "workspace": "linkbox",
+  "split": "train",
+  "query": "docs が最近ごちゃごちゃしてきた。重複とか古い記述を掃除して"
+ },
+ {
+  "id": "docs-09",
+  "expect": "docs",
+  "workspace": "linkbox",
+  "split": "train",
+  "query": "認証を Cookie セッションから個人アクセストークン方式に変えることにした。仕様を書き換えて"
+ },
+ {
+  "id": "docs-10",
+  "expect": "docs",
+  "workspace": "linkbox",
+  "split": "train",
+  "query": "data.md に Tag エンティティの定義が無いから足しといて"
+ },
+ {
+  "id": "setup-01",
+  "expect": "setup",
+  "workspace": "v5project",
+  "split": "validation",
+  "query": "このリポ、昔の Tri-SSD（l1_requirements とか l3_phases がある）なんだけど最新の構成にしたい"
+ },
+ {
+  "id": "setup-02",
+  "expect": "setup",
+  "workspace": "v5project",
+  "split": "validation",
+  "query": "docs/l3_phases のフェーズ管理って今の Tri-SSD だと Task になったんだよね？置き換えて"
+ },
+ {
+  "id": "setup-03",
+  "expect": "setup",
+  "workspace": "wcount",
+  "split": "validation",
+  "query": "この CLI の開発に Tri-SSD を導入したい。README から Goal を起こすところまでやって"
+ },
+ {
+  "id": "setup-04",
+  "expect": "setup",
+  "workspace": "wcount",
+  "split": "train",
+  "query": "tri-ssd を使ってこのプロジェクトの仕様とタスクの管理を始めたい"
+ },
+ {
+  "id": "setup-05",
+  "expect": "setup",
+  "workspace": "wcount",
+  "split": "train",
+  "query": "長期でAIに開発させるつもりだから、知識が腐らない仕組みとして Tri-SSD を入れといて"
+ },
+ {
+  "id": "setup-06",
+  "expect": "setup",
+  "workspace": "v5project",
+  "split": "train",
+  "query": "v5 の Tri-SSD から v6 に移行すると何が変わる？実際の移行までお願い"
+ },
+ {
+  "id": "setup-07",
+  "expect": "setup",
+  "workspace": "wcount",
+  "split": "train",
+  "query": "Tri-SSD のセットアップして"
+ },
+ {
+  "id": "setup-08",
+  "expect": "setup",
+  "workspace": "v5project",
+  "split": "train",
+  "query": "l0_ideas とか l2_foundation の構成を新しい Tri-SSD に合わせて整理して"
+ },
+ {
+  "id": "none-01",
+  "expect": "none",
+  "workspace": "linkbox",
+  "split": "train",
+  "query": "SQLite FTS5 の trigram と unicode61 トークナイザって何が違うの？"
+ },
+ {
+  "id": "none-02",
+  "expect": "none",
+  "workspace": "linkbox",
+  "split": "validation",
+  "query": "src/storage/url.py の normalize って何をする関数？"
+ },
+ {
+  "id": "none-03",
+  "expect": "none",
+  "workspace": "linkbox",
+  "split": "train",
+  "query": "このリポの直近のコミットを5件見せて"
+ },
+ {
+  "id": "none-04",
+  "expect": "none",
+  "workspace": "linkbox",
+  "split": "validation",
+  "query": "pytest と unittest、一般論としてどっちを使うべき？"
+ },
+ {
+  "id": "none-05",
+  "expect": "none",
+  "workspace": "linkbox",
+  "split": "train",
+  "query": "src/worker/links.py のリンク切れチェック、HEAD リクエストだけで判定するのって一般的？"
+ },
+ {
+  "id": "none-06",
+  "expect": "none",
+  "workspace": "wcount",
+  "split": "validation",
+  "query": "README に --verbose の使い方を追記して"
+ },
+ {
+  "id": "none-07",
+  "expect": "none",
+  "workspace": "wcount",
+  "split": "train",
+  "query": "この CLI の仕様書を docs/spec.md として書いて"
+ },
+ {
+  "id": "none-08",
+  "expect": "none",
+  "workspace": "wcount",
+  "split": "train",
+  "query": "wcount.py にファイル数を表示する --count-files オプションを実装して"
+ },
+ {
+  "id": "none-09",
+  "expect": "none",
+  "workspace": "wcount",
+  "split": "train",
+  "query": "CHANGELOG.md を作って、今回の --verbose 追加を書いといて"
+ },
+ {
+  "id": "none-10",
+  "expect": "none",
+  "workspace": "wcount",
+  "split": "train",
+  "query": "このプロジェクトのタスク管理、GitHub Issues と Projects のどっちがいいと思う？"
+ },
+ {
+  "id": "none-11",
+  "expect": "none",
+  "workspace": "wcount",
+  "split": "validation",
+  "query": "設計方針を ADR で残す運用にしたい。テンプレートを作って"
+ },
+ {
+  "id": "none-12",
+  "expect": "none",
+  "workspace": "v5project",
+  "split": "validation",
+  "query": "docs/l1_requirements/vision.md の内容をざっと要約して"
+ }
+]

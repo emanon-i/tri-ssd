@@ -21,6 +21,7 @@ allowed-tools: Read, Write, Edit, Glob, Grep  # 事前承認するツールの�
 - `description` + `when_to_use` は**合計1,536文字以内**（超過分はトランケートされ発火精度が落ちる）
 - `description` は三人称で「何をするか＋いつ使うか」。`when_to_use` にトリガー語（「〜したい」等の口語）を列挙
 - `allowed-tools` は「制限」ではなく「事前承認」。確実に使うツールのみ列挙する
+- 発火語は依頼の意図で書く。評価や試行で失敗した依頼の文言をそのまま足さない（その依頼にだけ合わせた過学習になり、評価の数字も信用できなくなる）。説明文を変えたら発火評価を回す（手順は `docs/skill-evaluation.md`）
 
 ## XML タグによる強指示
 
@@ -34,7 +35,7 @@ allowed-tools: Read, Write, Edit, Glob, Grep  # 事前承認するツールの�
 ```markdown
 <tri_ssd_context>
 Tri-SSD: Goal（docs/goal.md）・Docs（docs/ のあるべき状態）・Tasks（docs/tasks/ 差分を解消する検証可能な作業。作業メモも Task の中）・引き継ぎ（docs/notes/handoff.md）・CHANGELOG（意味のある変更の履歴）。常に守る規則はエージェントが常に読む指示ファイル（CLAUDE.md・AGENTS.md）に置く。
-決定的処理は CLI `python3 "${CLAUDE_SKILL_DIR}/../../scripts/tri.py"`（以下 `tri`）で行う。文書を開く前に `tri context` で必要なセクションだけを取得する。
+決定的処理は CLI `python3 "${CLAUDE_SKILL_DIR}/../../scripts/tri.py"`（以下 `tri`）で行う。`tri` はカレントディレクトリをプロジェクトとして扱うので、プロジェクトのルートでこの絶対パスのまま実行する（プラグインのディレクトリへ cd しない）。文書を開く前に `tri context` で必要なセクションだけを取得する。
 置き場・寿命の判断に迷ったら `${CLAUDE_SKILL_DIR}/../../docs/knowledge-model.md` を読むこと。
 </tri_ssd_context>
 ```

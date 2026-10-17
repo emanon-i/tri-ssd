@@ -1,0 +1,30 @@
+schema_version: "1.1"
+name: heldout-docs-csv-export
+description: 未実装の要求の追加では、要求を書き、実装する Task を作って計画マーカーでつなぎ、CHANGELOG に記録する
+tags: [outcome, heldout, docs]
+plugins: ["../.."]
+context:
+  scaffold_script: fixture.sh
+execution:
+  max_turns: 40
+  timeout_seconds: 900
+  allowed_tools: [Read, Glob, Grep, Skill]
+  prompt: |
+    エクスポートで CSV 形式も選べるようにしたい。まずは仕様に入れておいて。
+graders:
+  - name: requirement-has-csv
+    type: regex
+    target: { source: file, path: docs/requirements.md }
+    pattern: 'CSV'
+  - name: task-for-implementation
+    type: file_exists
+    path: 'docs/tasks/T-*.md'
+  - name: no-history-in-req
+    type: regex
+    target: { source: file, path: docs/requirements.md }
+    pattern: '以前は|当初|追加した|追加しました'
+    match: not_contains
+  - name: changelog-recorded
+    type: regex
+    target: { source: file, path: CHANGELOG.md }
+    pattern: '## \[Unreleased\]((?!## \[0\.3\.0\])[\s\S])*CSV'

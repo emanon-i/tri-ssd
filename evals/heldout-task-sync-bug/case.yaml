@@ -1,0 +1,31 @@
+schema_version: "1.1"
+name: heldout-task-sync-bug
+description: 仕様（docs/sync.md の競合解決）と食い違うバグの修正を頼まれたら、Task にして直し、検証して完了する
+tags: [outcome, heldout, task]
+plugins: ["../.."]
+context:
+  scaffold_script: fixture.sh
+execution:
+  max_turns: 60
+  timeout_seconds: 1200
+  allowed_tools: [Read, Glob, Grep, Skill]
+  prompt: |
+    同期で、片方の端末で消したブックマークが、もう片方の端末での更新で復活してしまう。直して。
+graders:
+  - name: fix-matches-spec
+    type: llm
+    focus: { source: file, path: src/sync/merge.py }
+    criteria: |
+      PASS: 削除と更新が競合したとき削除が優先され、消したブックマークが更新で復活しない実装になっている。
+      FAIL: 競合時に更新が勝って復活しうる、または remote をそのまま返すだけ。
+  - name: test-added
+    type: file_exists
+    path: 'tests/**/*.py'
+  - name: task-closed-with-evidence
+    # 新しい Task が作られ、完了ゲートを通って _done/ に入った
+    type: file_exists
+    path: 'docs/tasks/_done/*.md'
+  - name: no-scattered-notes
+    type: file_exists
+    path: 'docs/notes/**'
+    exists: false

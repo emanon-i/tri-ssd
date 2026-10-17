@@ -1,0 +1,30 @@
+schema_version: "1.1"
+name: neg-docs-other-repo
+description: Tri-SSD を導入していないリポジトリの「ドキュメント更新して」ではスキルを呼ばない
+tags: [outcome, dev, trigger-negative]
+plugins: ["../.."]
+expected_outcome: スキルを呼ばず（Tri-SSD の導入も勧めず）、docs/usage.md に --verbose を書き足す。
+context:
+  scaffold_script: fixture.sh
+execution:
+  max_turns: 15
+  timeout_seconds: 300
+  allowed_tools: [Read, Glob, Grep, Skill]
+  prompt: |
+    wcount.py に --verbose オプションを追加したので、ドキュメントを更新して。
+graders:
+  - name: no-tri-skill
+    type: tool_used
+    tool: Skill
+    input_match: '"skill"\s*:\s*"(?:tri-ssd:)?(?:setup|task|docs)"'
+    min: 0
+    max: 0
+    arm: both
+  - name: no-tri-files
+    type: file_exists
+    path: 'docs/goal.md'
+    exists: false
+  - name: usage-updated
+    type: regex
+    target: { source: file, path: docs/usage.md }
+    pattern: '--verbose'

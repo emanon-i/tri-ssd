@@ -3,7 +3,7 @@ code: [tests/eval_context.py, tests/simulate.py]
 ---
 # 評価
 
-Context Resolver（REQ-0002）と長期運用（REQ-0004・REQ-0006）の実測結果。数値は `tests/eval_context.py` が生成し、手で書き換えない。
+Context Resolver（REQ-0002）と長期運用（REQ-0004・REQ-0006）の実測結果。Skill の発火と効果は [Skill の評価](skill-evaluation.md)。数値は `tests/eval_context.py` が生成し、手で書き換えない。
 
 ## 方法
 
@@ -63,4 +63,4 @@ Context Resolver（REQ-0002）と長期運用（REQ-0004・REQ-0006）の実測�
 - 評価ケースは 7 件で、正解集合は作者 1 人の判定。大規模な実プロジェクトでの計測はしていない
 - 履歴汚染の検出は言い回しの候補提示で、意味の判断（本当に経緯か）はエージェントに依存する
 - 同じ事実を別の文で書いた重複（例: 「30 日」が 4 文書に散在）は段落の類似度では検出できない。試行 2 ではエージェントが context と grep で見つけた
-- 実エージェントでの試行は 2 回（同じフィクスチャ）。フックは Claude Code 上での発火を確認しておらず、CLI のフック用モードをテストで確認した
+- サブエージェントでの試行は 3 回（同じフィクスチャ）。フックは Claude Code 上での発火を確認しておらず、CLI のフック用モードをテストで確認した

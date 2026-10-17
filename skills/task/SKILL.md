@@ -1,6 +1,6 @@
 ---
 description: Tri-SSD プロジェクト（docs/goal.md がある）で開発作業を進める。作業開始時に現在位置と Task に必要な文脈だけを CLI で取得し、仕様と実装の差分を Task にし、受け入れ条件を検証証跡付きで満たして完了させる。作業メモと次のセッションへの引き継ぎも扱う。
-when_to_use: 実装して・続きをやって・次は何をする？・T-0003 をやって・このバグを直して・この仕様を実装して・Task を作って・検証して・完了にして・作業を再開して・メモしておいて・引き継ぎを書いて・今日はここまで、と言われたとき。Tri-SSD のプロジェクトでコードを変更する作業全般。英語では implement / continue / next task / fix this / close the task。文書の改訂だけなら docs、導入・移行は setup を使う。
+when_to_use: 実装して・続きをやって・次は何をする？・T-0003 をやって・このバグを直して・この仕様を実装して・Task を作って・検証して・完了にして・作業を再開して・メモしておいて・引き継ぎを書いて・今日はここまで、と言われたとき。Tri-SSD のプロジェクトでコードを変更する作業全般。英語では implement / continue / next task / fix this / close the task。文書の改訂や、仕様の値・方針を変えたい依頼は docs（実装も要るなら docs の手順が Task を作る）、導入・移行は setup を使う。docs/goal.md の無いリポジトリでの作業には使わない。
 argument-hint: "[T-xxxx | 作業内容] - 対象 Task または依頼内容（省略時は現在位置から選ぶ）"
 allowed-tools: Read, Edit, Write, Glob, Grep, Bash
 ---
@@ -9,7 +9,7 @@ allowed-tools: Read, Edit, Write, Glob, Grep, Bash
 
 <tri_ssd_context>
 Tri-SSD: Goal（docs/goal.md）・Docs（docs/ のあるべき状態）・Tasks（docs/tasks/ 差分を解消する検証可能な作業。作業メモも Task の中）・引き継ぎ（docs/notes/handoff.md）・CHANGELOG（意味のある変更の履歴）。常に守る規則はエージェントが常に読む指示ファイル（CLAUDE.md・AGENTS.md）に置く。
-決定的処理は CLI `python3 "${CLAUDE_SKILL_DIR}/../../scripts/tri.py"`（以下 `tri`）で行う。文書を開く前に `tri context` で必要なセクションだけを取得する。
+決定的処理は CLI `python3 "${CLAUDE_SKILL_DIR}/../../scripts/tri.py"`（以下 `tri`）で行う。`tri` はカレントディレクトリをプロジェクトとして扱うので、プロジェクトのルートでこの絶対パスのまま実行する（プラグインのディレクトリへ cd しない）。文書を開く前に `tri context` で必要なセクションだけを取得する。
 置き場・寿命の判断に迷ったら `${CLAUDE_SKILL_DIR}/../../docs/knowledge-model.md` を読むこと。
 </tri_ssd_context>
 

@@ -1,0 +1,77 @@
+schema_version: "1.1"
+name: docs-change-value
+description: 仕様の値の変更を頼まれたら docs スキルで、Docs を現在形のまま置き換え CHANGELOG に記録する
+tags: [outcome, dev, docs, trigger-positive]
+plugins: ["../.."]
+expected_outcome: >-
+  docs スキルが発火し、「10 件」を書いていた記述（search.md・api.md・進行中の T-0005 の AC）をすべて置き換える。
+  「以前は」「10 件から変更」のような経緯を Docs 本文に書かず、CHANGELOG の [Unreleased] に記録し、tri check でエラー 0 を確かめる。
+context:
+  scaffold_script: fixture.sh
+execution:
+  max_turns: 40
+  timeout_seconds: 900
+  allowed_tools: [Read, Glob, Grep, Skill]
+  prompt: |
+    タグ補完の候補数の上限を 20 件に変えたい。
+graders:
+  - name: skill-docs-fired
+    type: tool_used
+    tool: Skill
+    input_match: '"skill"\s*:\s*"(?:tri-ssd:)?docs"'
+  - name: no-cd-into-plugin
+    # tri はカレントディレクトリのプロジェクトを扱う。プラグインのディレクトリへ cd すると別のプロジェクトを操作してしまう
+    type: tool_used
+    tool: Bash
+    input_match: '"command"\s*:\s*"cd [^;&|"]*(?:tri-ssd|/plugins/)'
+    min: 0
+    max: 0
+    arm: with-only
+  - name: check-ran-clean
+    type: regex
+    target: trace
+    pattern: '検査完了: エラー 0'
+    arm: with-only
+  - name: search-md-replaced
+    type: regex
+    target: { source: file, path: docs/search.md }
+    pattern: '上位 10 件'
+    match: not_contains
+  - name: api-md-replaced
+    type: regex
+    target: { source: file, path: docs/api.md }
+    pattern: '最大 10 件'
+    match: not_contains
+  - name: api-md-refers-not-duplicates
+    # 1つの事実は1箇所。API の記述は設計（search.md）か REQ の値を参照し、数値を重ねて書かない
+    type: regex
+    target: { source: file, path: docs/api.md }
+    pattern: '20 ?件'
+    match: not_contains
+  - name: active-task-ac-replaced
+    type: regex
+    target: { source: file, path: docs/tasks/T-0005-tag-search.md }
+    pattern: '最大 10 件'
+    match: not_contains
+  - name: no-history-in-search-md
+    type: regex
+    target: { source: file, path: docs/search.md }
+    pattern: '以前は|当初|10 ?件から|から ?20 ?件|に変更|に引き上げ'
+    match: not_contains
+  - name: no-history-in-api-md
+    type: regex
+    target: { source: file, path: docs/api.md }
+    pattern: '以前は|当初|10 ?件から|から ?20 ?件|に変更|に引き上げ'
+    match: not_contains
+  - name: changelog-recorded
+    type: regex
+    target: { source: file, path: CHANGELOG.md }
+    pattern: '## \[Unreleased\]((?!## \[0\.3\.0\])[\s\S])*20'
+  - name: search-md-current-state
+    type: llm
+    focus: { source: file, path: docs/search.md }
+    criteria: |
+      「タグ検索」の節を読む。
+      PASS: タグ補完の候補数の上限が 20 件であること（または正の定義箇所、例えば REQ への参照）が読み取れ、
+      節の他の記述（AND/OR の評価・使用回数順）が失われずに、現在のあるべき状態として自然に書かれている。
+      FAIL: 上限が 10 件のまま／上限の記述が消えて分からない／経緯（「変更した」「以前は」等）が書かれている／他の記述が壊れている。

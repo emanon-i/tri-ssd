@@ -1,6 +1,6 @@
 ---
-description: Tri-SSD プロジェクトの Goal と Docs（あるべき状態を定める文書）を作成・改訂する。古い記述を残さず置き換え、意味のある変更を CHANGELOG に記録し、参照切れ・履歴汚染・重複を CLI で検査する更新プロトコルを実行する。
-when_to_use: 仕様を書いて・設計を変えたい・方針が変わった・ドキュメントを更新して・ドキュメントを整理して・Goal を決めたい・要求を追加して・この判断を記録して・文書が古い・ドキュメントが肥大化している、と言われたとき。Task 完了時に Docs の見直しが必要なとき。英語では update the spec / revise docs / record decision。実装作業・作業メモ・引き継ぎは task を使う。
+description: Tri-SSD プロジェクト（docs/goal.md がある）の Goal と Docs（あるべき状態を定める文書）を作成・改訂する。古い記述を残さず置き換え、意味のある変更を CHANGELOG に記録し、参照切れ・履歴汚染・重複を CLI で検査する更新プロトコルを実行する。
+when_to_use: Tri-SSD プロジェクトで、仕様を書いて・設計を変えたい・仕様で決めた値・方式・方針を変えたい・方針が変わった・ドキュメントを更新して・ドキュメントを整理して・Goal を決めたい・要求を追加して・この判断を記録して・文書が古い・ドキュメントが肥大化している、と言われたとき。Task 完了時に Docs の見直しが必要なとき。英語では update the spec / revise docs / record decision。実装作業・作業メモ・引き継ぎは task を使う。docs/goal.md の無いリポジトリの文書更新には使わない（導入を頼まれたときだけ setup）。
 argument-hint: "[変更内容 | 対象文書] - 何をどう変えるか"
 allowed-tools: Read, Edit, Write, Glob, Grep, Bash
 ---
@@ -9,7 +9,7 @@ allowed-tools: Read, Edit, Write, Glob, Grep, Bash
 
 <tri_ssd_context>
 Tri-SSD: Goal（docs/goal.md）・Docs（docs/ のあるべき状態）・Tasks（docs/tasks/ 差分を解消する検証可能な作業。作業メモも Task の中）・引き継ぎ（docs/notes/handoff.md）・CHANGELOG（意味のある変更の履歴）。常に守る規則はエージェントが常に読む指示ファイル（CLAUDE.md・AGENTS.md）に置く。
-決定的処理は CLI `python3 "${CLAUDE_SKILL_DIR}/../../scripts/tri.py"`（以下 `tri`）で行う。文書を開く前に `tri context` で必要なセクションだけを取得する。
+決定的処理は CLI `python3 "${CLAUDE_SKILL_DIR}/../../scripts/tri.py"`（以下 `tri`）で行う。`tri` はカレントディレクトリをプロジェクトとして扱うので、プロジェクトのルートでこの絶対パスのまま実行する（プラグインのディレクトリへ cd しない）。文書を開く前に `tri context` で必要なセクションだけを取得する。
 置き場・寿命の判断に迷ったら `${CLAUDE_SKILL_DIR}/../../docs/knowledge-model.md` を読むこと。
 </tri_ssd_context>
 

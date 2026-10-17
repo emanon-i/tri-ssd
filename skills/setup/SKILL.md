@@ -9,7 +9,7 @@ allowed-tools: Read, Edit, Write, Glob, Grep, Bash
 
 <tri_ssd_context>
 Tri-SSD: Goal（docs/goal.md）・Docs（docs/ のあるべき状態）・Tasks（docs/tasks/ 差分を解消する検証可能な作業。作業メモも Task の中）・引き継ぎ（docs/notes/handoff.md）・CHANGELOG（意味のある変更の履歴）。常に守る規則はエージェントが常に読む指示ファイル（CLAUDE.md・AGENTS.md）に置く。
-決定的処理は CLI `python3 "${CLAUDE_SKILL_DIR}/../../scripts/tri.py"`（以下 `tri`）で行う。文書を開く前に `tri context` で必要なセクションだけを取得する。
+決定的処理は CLI `python3 "${CLAUDE_SKILL_DIR}/../../scripts/tri.py"`（以下 `tri`）で行う。`tri` はカレントディレクトリをプロジェクトとして扱うので、プロジェクトのルートでこの絶対パスのまま実行する（プラグインのディレクトリへ cd しない）。文書を開く前に `tri context` で必要なセクションだけを取得する。
 置き場・寿命の判断に迷ったら `${CLAUDE_SKILL_DIR}/../../docs/knowledge-model.md` を読むこと。
 </tri_ssd_context>
 
@@ -43,7 +43,7 @@ Tri-SSD: Goal（docs/goal.md）・Docs（docs/ のあるべき状態）・Tasks�
 ## 旧 Tri-SSD（v5 以前）からの移行
 
 1. `tri migrate` — ドライラン。移動・変換の計画を表示する
-2. ユーザーに計画を見せて了承を得てから `tri migrate --apply`
+2. ユーザーに計画を見せて了承を得てから `tri migrate --apply`（依頼で適用まで任されていれば、計画を示してそのまま適用する）
 
 | 旧 | 新 |
 |---|---|
@@ -67,7 +67,6 @@ Tri-SSD: Goal（docs/goal.md）・Docs（docs/ のあるべき状態）・Tasks�
 
 - セッション開始時: `tri status` の要約を文脈に入れる
 - `docs/` の Markdown を編集した直後: その文書への検査指摘を返す
-- `docs/` の文書を読んだとき: 参照を `.tri-ssd/reads.log` に記録する（Task 完了時の「書かれていない依存の候補」に使う）
 
 ## 完了後の案内
 
