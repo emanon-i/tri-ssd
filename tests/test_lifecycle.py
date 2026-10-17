@@ -109,6 +109,7 @@ class MigrateTest(ProjectCase):
         merged = self.read("docs/tasks/PH-0003_sync.md")
         self.assertIn("status: open", merged)
         self.assertIn("F-0003: Git 同期", merged)
+        self.assertLess(merged.index("F-0003: Git 同期"), merged.index("## 検証記録"))  # 機能の節を検証記録に入れない
         p = self.project()
         self.assertEqual(p.defs["REQ-0002"], ["docs/goal.md#同期"])
         self.assertIn("PH-0003", p.defs)

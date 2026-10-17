@@ -1,0 +1,48 @@
+schema_version: "1.1"
+name: setup-migrate
+description: 旧構成のプロジェクトで移行を頼まれたら setup スキルで、ドライランで計画を見てから適用する
+tags: [setup, trigger-positive]
+plugins: ["../.."]
+expected_outcome: >-
+  setup スキルが発火し、tri migrate（ドライラン）で計画を確認してから tri migrate --apply を実行する。
+  移行後に goal.md と tasks/ ができ、CHANGELOG に移行が記録され、tri check のエラーを直してエラー 0 になる。
+context:
+  scaffold_script: fixture.sh
+execution:
+  max_turns: 40
+  timeout_seconds: 900
+  allowed_tools: [Read, Glob, Grep, Skill]
+  prompt: |
+    このプロジェクトの Tri-SSD を新しい構成に移行して。計画を確認したら、適用まで進めてよい。
+graders:
+  - name: skill-setup-fired
+    type: tool_used
+    tool: Skill
+    input_match: '"skill"\s*:\s*"(?:tri-ssd:)?setup"'
+  - name: no-cd-into-plugin
+    # tri はカレントディレクトリのプロジェクトを扱う。プラグインのディレクトリへ cd すると別のプロジェクトを操作してしまう
+    type: tool_used
+    tool: Bash
+    input_match: '"command"\s*:\s*"cd [^;&|"]*(?:tri-ssd|/plugins/)'
+    min: 0
+    max: 0
+    arm: with-only
+  - name: dry-run-before-apply
+    type: tool_order
+    before: { tool: Bash, input_match: 'migrate(?![^"]*--apply)' }
+    after: { tool: Bash, input_match: 'migrate[^"]*--apply' }
+  - name: check-ran-clean
+    type: regex
+    target: trace
+    pattern: '検査完了: エラー 0'
+    arm: with-only
+  - name: goal-created
+    type: file_exists
+    path: docs/goal.md
+  - name: tasks-created
+    type: file_exists
+    path: 'docs/tasks/**/*.md'
+  - name: changelog-recorded
+    type: regex
+    target: { source: file, path: CHANGELOG.md }
+    pattern: '移行|[Mm]igrat'

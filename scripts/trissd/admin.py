@@ -239,12 +239,17 @@ def migrate(root: Path, apply: bool = False) -> list[str]:
 def _migrate_phase(root: Path, src: Path, merge: bool):
     if merge:
         phase = src / "_phase.md"
-        parts = [phase.read_text(encoding="utf-8")] if phase.exists() else []
+        lines = phase.read_text(encoding="utf-8").splitlines() if phase.exists() else []
+        # 機能の節は検証記録より前に置く（後ろに足すと検証記録の節に入り、AC として読まれない）
+        cut = next((i for i, ln in enumerate(lines)
+                    if ln.startswith("## ") and tasks.EVIDENCE_HEAD_RE.search(ln)), len(lines))
+        parts = ["\n".join(lines[:cut])]
         for f in sorted(src.glob("F-*.md")):
             body = f.read_text(encoding="utf-8")
             fm, start = md.parse_frontmatter(body)
             parts.append("\n".join(body.splitlines()[start:]))
-        text = "\n\n".join(x.strip("\n") for x in parts) + "\n"
+        parts.append("\n".join(lines[cut:]))
+        text = "\n\n".join(x.strip("\n") for x in parts if x.strip()) + "\n"
         name = src.name + ".md"
     else:
         text = src.read_text(encoding="utf-8")

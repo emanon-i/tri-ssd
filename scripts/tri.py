@@ -325,7 +325,7 @@ def cmd_migrate(a):
     for line in admin.migrate(Path(a.root), a.apply):
         print(f"- {line}" if not line.startswith("（") else line)
     if a.apply:
-        print("\n次: python3 tri.py check で参照切れを確認し、goal.md から REQ 詳細を Docs へ分離（Goal は短く）")
+        print(f"\n次: python3 {SCRIPT} check で参照切れを確認し、goal.md から REQ 詳細を Docs へ分離（Goal は短く）")
     return 0
 
 

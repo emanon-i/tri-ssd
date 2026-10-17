@@ -1,0 +1,66 @@
+schema_version: "1.1"
+name: task-continue
+description: 進行中 Task の続きを頼まれたら task スキルで文脈を取り、AC を検証して完了する
+tags: [task, trigger-positive]
+plugins: ["../.."]
+expected_outcome: >-
+  task スキルが発火し、tri context で必要な節を取り、AC1 のテストを AND 条件を確かめるものにして検証し、
+  計画マーカーを外して task close で _done/ に移す。既存の _done/ は書き換えず、判断と作業メモは Task 内に残す。
+context:
+  scaffold_script: fixture.sh
+execution:
+  max_turns: 60
+  timeout_seconds: 1200
+  allowed_tools: [Read, Glob, Grep, Skill]
+  prompt: |
+    T-0005 の続きをやって。補完の並び順は use_count 列を足さず、毎回集計する方式でいい。
+graders:
+  - name: skill-task-fired
+    type: tool_used
+    tool: Skill
+    input_match: '"skill"\s*:\s*"(?:tri-ssd:)?task"'
+  - name: no-cd-into-plugin
+    # tri はカレントディレクトリのプロジェクトを扱う。プラグインのディレクトリへ cd すると別のプロジェクトを操作してしまう
+    type: tool_used
+    tool: Bash
+    input_match: '"command"\s*:\s*"cd [^;&|"]*(?:tri-ssd|/plugins/)'
+    min: 0
+    max: 0
+    arm: with-only
+  - name: closed
+    type: regex
+    target: { source: file, path: docs/tasks/_done/T-0005-tag-search.md }
+    pattern: '^status: done'
+    flags: m
+  - name: evidence-recorded
+    type: regex
+    target: { source: file, path: docs/tasks/_done/T-0005-tag-search.md }
+    pattern: 'AC1 PASS[\s\S]*AC2 PASS|AC2 PASS[\s\S]*AC1 PASS'
+  - name: plan-marker-removed
+    type: regex
+    target: { source: file, path: docs/search.md }
+    pattern: '計画: T-0005'
+    match: not_contains
+  - name: done-untouched
+    # T-0003 は同じテスト（tests.test_search）を検証に使う完了済み Task。テストを変えても書き換えないのが正しい
+    type: regex
+    target: { source: file, path: docs/tasks/_done/T-0003-fulltext.md }
+    pattern: '^---\nid: T-0003\nstatus: done\nrefs: \[REQ-0003\]\nclosed: 2026-09-01\n---\n# T-0003 全文検索\n\n## 受け入れ条件\n\n- \[x\] AC1: 日本語の部分一致で見つかる\n  - 検証: `python3 -m unittest tests.test_search`\n\n## 検証記録\n\n- 2026-09-01 10:00 AC1 PASS `python3 -m unittest tests.test_search` → exit 0 「OK」 tree=none\n$'
+  - name: no-scattered-notes
+    type: file_exists
+    path: 'docs/notes/**'
+    exists: false
+  - name: test-checks-and
+    type: llm
+    focus: { source: file, path: tests/test_search.py }
+    criteria: |
+      PASS: タグの AND 検索を実際に確かめるテストがある。複数のタグを持つ／一部だけ持つブックマークを用意し、
+      指定した全タグを持つものだけが返ることを assert している。
+      FAIL: テストが何も assert しない（pass だけ等）、または AND の絞り込みを確かめていない。
+  - name: decision-in-task
+    type: llm
+    focus: { source: file, path: docs/tasks/_done/T-0005-tag-search.md }
+    criteria: |
+      PASS: Task ファイルの中（「## メモ」「## 判断」など）に、補完の並び順を use_count 列ではなく毎回の集計で
+      実現したという判断か、それに関する作業中の発見が書かれている。
+      FAIL: その判断がファイルのどこにも無い、またはファイルが空・存在しない。
