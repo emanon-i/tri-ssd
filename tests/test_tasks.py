@@ -127,7 +127,7 @@ class ReportTest(ProjectCase):
         self.tri("task", "verify", "T-0007")
         self.tri("log", "Added", "ゴミ箱の自動削除", "--refs", "T-0007")
         out = self.tri("task", "report", "T-0007")[1]
-        for part in ("## 目的の状態", "REQ-0011 削除とゴミ箱 — 削除したブックマークは", "- AC1: 30 日経過分だけ",
+        for part in ("## 目的の状態", "- REQ-0011 削除とゴミ箱\n", "- AC1: 30 日経過分だけ",
                      "結果: PASS", "## 判断（なぜこの方法か）", "トリガー方式は", "- src/worker/trash.py",
                      "- ゴミ箱の自動削除（T-0007）"):
             self.assertIn(part, out)

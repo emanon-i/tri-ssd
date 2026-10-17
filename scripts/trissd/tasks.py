@@ -418,9 +418,7 @@ def report(p: Project, id_: str) -> str:
             if not sec:
                 out.append(f"- {r}（見つかりません）")
                 continue
-            body = next((x.strip() for x in sec.text.splitlines()[1:] if x.strip()), "")
-            name = sec.title if sec.title.startswith(r) else f"{r}: {sec.title}"
-            out.append(f"- {name}" + (f" — {body[:80]}" if body else ""))
+            out.append(f"- {sec.title if sec.title.startswith(r) else f'{r}: {sec.title}'}")
         out.append("")
     lt = latest(parse_evidence(text))
     base_res = {m.group(2): m.group(3) for m in (BASE_LINE_RE.match(x) for x in text.splitlines()) if m}
