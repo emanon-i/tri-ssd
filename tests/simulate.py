@@ -4,7 +4,7 @@
 エージェントの編集は決定的にスクリプト化する（同じ入力で同じ結果）:
 
   disciplined: Tri-SSD の更新プロトコルどおり（置換・マーカー除去・CHANGELOG・ノート昇格）
-  careless   : 追記で済ませる・マーカーを外さない・ノートを溜める（典型的な失敗）
+  careless   : 追記で済ませる・マーカーを外さない・引き継ぎを上書きせず溜める（典型的な失敗）
 
     python3 tests/simulate.py [--cycles 8] [--mode disciplined|careless]
 """
@@ -13,6 +13,7 @@ from __future__ import annotations
 import argparse
 import contextlib
 import io
+import re
 import subprocess
 import sys
 import tempfile
@@ -22,6 +23,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
 import tri  # noqa: E402
 from trissd import check, md, notes, resolve  # noqa: E402
+from trissd.tasks import _section_range  # noqa: E402
 from trissd.project import Project  # noqa: E402
 
 FEATURES = [
@@ -105,7 +107,9 @@ class Sim:
         t = t.replace("<!-- `実行するコマンド` または 手動: 確認方法 -->", f"`python3 src/{name}.py`")
         self.write(tpath, t)
         # 9a. 作業中の発見をノートへ
-        self.tri("note", "add", f"{name}: 標準入力が空のとき例外になる。空なら何もしないのが妥当", "--task", task)
+        memo = f"- {name}: 標準入力が空のとき例外になる。空なら何もしないのが妥当"
+        self.write(tpath, self.read(tpath).replace(
+            "<!-- 作業中の発見・仮説・調べたこと。Task の完了と一緒に退場する。今後も真な事実は Docs へ移す -->", memo))
         # 4. 実装と検証
         self.write(f"src/{name}.py", f"print('{name} ok')\n")
         code, _ = self.tri("task", "verify", task)
@@ -117,9 +121,6 @@ class Sim:
         if self.mode == "disciplined":
             self.write("docs/design.md", self.read("docs/design.md").replace(
                 f"実装は `src/{name}.py`。", f"実装は `src/{name}.py`。空の入力では何もしない。"))
-            inbox = self.read("docs/notes/inbox.md")
-            keep = [blk for blk in inbox.split("\n## ") if f"{name}: 標準入力" not in blk]
-            self.write("docs/notes/inbox.md", "\n## ".join(keep))
         # 6. 技術判断の変更（サイクル 3 で保存方式を変える）
         if i == 3:
             d = self.read("docs/design.md")
@@ -141,9 +142,11 @@ class Sim:
             self.tri("log", "Added", req_text, "--refs", task)
         # 8. 次の Task を追加（次サイクルの前触れ）＋ 10. 引き継ぎ
         if self.mode == "disciplined":
-            self.tri("note", "handoff", f"{task} 完了。次は {FEATURES[(i + 1) % len(FEATURES)][0]} の要求定義から")
+            self.tri("handoff", f"{task} 完了。次は {FEATURES[(i + 1) % len(FEATURES)][0]} の要求定義から")
         else:
-            self.tri("note", "add", f"引き継ぎ: {task} 完了。次は {FEATURES[(i + 1) % len(FEATURES)][0]}")
+            hf = self.path("docs/notes/handoff.md")  # 上書きせず追記で溜める
+            old = hf.read_text(encoding="utf-8") if hf.exists() else "# 引き継ぎ\n"
+            self.write("docs/notes/handoff.md", old + f"\n- {task} 完了。次は {FEATURES[(i + 1) % len(FEATURES)][0]}\n")
         self.git("add", "-A")
         self.git("commit", "-qm", f"cycle {i}")
 
@@ -152,7 +155,12 @@ class Sim:
         p = Project(self.root)
         issues = check.run(p)
         docs_tokens = sum(md.estimate_tokens(d.text) for d in p.docs.values() if d.kind in ("goal", "doc"))
-        notes_tokens = sum(e.tokens for e in notes.entries(p))
+        # 一時情報の総量: Notes（引き継ぎ等）と、進行中 Task の `## メモ`
+        notes_tokens = sum(md.estimate_tokens(d.text) for d in p.docs.values() if d.kind == "note")
+        for d in p.task_docs():
+            rng = _section_range(d.text, re.compile("^メモ"))
+            if rng:
+                notes_tokens += md.estimate_tokens("\n".join(d.text.splitlines()[rng[0]:rng[1]]))
         handoffs = len(notes.read_handoff(p))
         # 10. 新しいセッション: status → 進行中 Task の文脈取得
         last = FEATURES[i % len(FEATURES)][0] + str(i // len(FEATURES) or "")

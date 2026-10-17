@@ -7,17 +7,18 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 このリポジトリは **Tri-SSD Claude Code プラグインの開発リポジトリ** です。
 
 Tri-SSD は、AI エージェント駆動の長期開発で知識が陳腐化・肥大化しないよう、知識のライフサイクルとコンテキストを管理するハーネスです。
-Goal・Docs・Tasks・Notes・CHANGELOG の置き場と寿命を定め、決定的な処理（知識グラフ・関連セクションの取得・逆引き・検査・完了ゲート）を CLI で行います。
+Goal・Docs・Tasks・引き継ぎ・CHANGELOG の置き場と寿命を定め、決定的な処理（知識グラフ・関連セクションの取得・逆引き・検査・完了ゲート）を CLI で行います。
 
 核の哲学: **管理のための管理を増やさない**。**決定的に処理できることは機械で、意味の判断はエージェントで**。
 
 ## ディレクトリ構成
 
 ```text
-skills/          # Skill（setup / task / docs / note）。SKILL.md + references/
+skills/          # Skill（setup / task / docs）。SKILL.md + references/
 scripts/tri.py   # CLI の入口（標準ライブラリのみ）
 scripts/trissd/  # CLI の実装（md / project / resolve / check / tasks / notes / admin）
 hooks/           # プラグインのフック（SessionStart・PostToolUse）
+templates/       # Goal・Task・CHANGELOG の雛形（書式の正）
 docs/            # フレームワーク仕様（knowledge-model / writing-rules / architecture）兼、このリポジトリ自身の Tri-SSD 知識
 tests/           # unittest・長期運用シミュレーション・コンテキスト効率の評価・フィクスチャ
 .claude-plugin/  # plugin.json / marketplace.json

@@ -3,46 +3,25 @@ import json
 import unittest
 
 from helpers import ProjectCase, git
-from trissd import notes
 
 
-class NoteTest(ProjectCase):
-    def test_add_with_task_creates_reference(self):
-        code, out = self.tri("note", "add", "use_count 列を足すと 80ms→5ms", "--task", "T-0005")
-        self.assertEqual(code, 0)
-        text = self.read("docs/notes/inbox.md")
-        self.assertRegex(text, r"## \d{4}-\d{2}-\d{2} \d{2}:\d{2} T-0005\n\nuse_count 列を足すと 80ms→5ms\n")
-        e = [x for x in notes.entries(self.project()) if "use_count 列を足すと" in x.title][0]
-        self.assertIn("T-0005", e.refs)
-        self.tri("note", "add", "補完の方針\n- use_count を使う\n- 上位 10 件")
-        self.assertIn("## ", self.read("docs/notes/inbox.md").split("補完の方針")[0].splitlines()[-1])
-
-    def test_keep_mark_suppresses_flags(self):
-        self.edit("docs/notes/inbox.md", "前方一致フォールバックで対応済み", "前方一致フォールバックで対応済み <!-- tri:keep -->")
-        line = [x for x in self.tri("note", "triage")[1].splitlines() if "trigram" in x][0]
-        self.assertNotIn("⚑", line)
+class HandoffTest(ProjectCase):
+    """引き継ぎは上書きの1つだけ（溜まる場所を作らない）。個人用は git 管理外。"""
 
     def test_handoff_overwrites(self):
-        self.tri("note", "handoff", "1回目の引き継ぎ")
-        self.tri("note", "handoff", "-", stdin="2回目: T-0006 から再開\n")
+        self.tri("handoff", "1回目の引き継ぎ")
+        self.tri("handoff", "-", stdin="2回目: T-0006 から再開\n")
         text = self.read("docs/notes/handoff.md")
         self.assertNotIn("1回目", text)
         self.assertIn("2回目", text)
         self.assertIn("2回目", self.tri("status")[1])
 
-    def test_triage_flags(self):
-        code, out = self.tri("note", "triage")
-        line = [x for x in out.splitlines() if "trigram" in x][0]
-        self.assertIn("task-closed", line)  # T-0003 は完了済み → 昇格 or 削除の候補
-        self.assertIn("old", line)
-        self.assertNotIn("handoff.md", out)
-
-    def test_local_notes_stay_out_of_git(self):
-        self.tri("note", "add", "社内 VPN 経由だと fetch が遅い", "--local")
-        self.assertTrue((self.root / ".tri-ssd/notes/inbox.md").exists())
+    def test_local_handoff_stays_out_of_git(self):
+        self.tri("handoff", "社内 VPN 経由だと fetch が遅い", "--local")
+        self.assertTrue((self.root / ".tri-ssd/handoff.md").exists())
         self.assertEqual((self.root / ".tri-ssd/.gitignore").read_text(), "*\n")
         self.assertNotIn(".tri-ssd", git(self.root, "status", "--porcelain"))
-        self.assertIn("社内 VPN", self.tri("note", "triage")[1])
+        self.assertIn("社内 VPN", self.tri("status")[1])
 
 
 class ChangelogTest(ProjectCase):

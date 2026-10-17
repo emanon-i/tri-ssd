@@ -6,33 +6,28 @@ Tri-SSD (Tri-Layer Slice Spec Driven) フレームワークの変更履歴です
 
 ## [Unreleased]
 
-### Added
-
-- 検証の要所化と報告: 着手時点との比較で変更を確かめていない検証を警告し、人間向けの報告を既存の記録から組み立てる。ゲートは関係する文書の誤りだけで止め、手の確認は失効させない（T-0011）
-
 ## [6.0.0] - 2026-10-16
 
-知識ライフサイクル管理とコンテキスト最適化のハーネスへ再設計（破壊的変更）。判断の背景は docs/adr/0001-knowledge-harness.md。
+知識ライフサイクル管理とコンテキスト最適化のハーネスへ再設計（破壊的変更）。判断の背景は docs/adr/0001-knowledge-harness.md と docs/adr/0002-places-with-lifetimes.md。
 
 ### Added
 
-- **知識モデル**: Goal・Docs・Tasks・Notes・CHANGELOG の置き場を更新契機と寿命で定義（docs/knowledge-model.md）。Docs の差分マーカー `（計画: T-nnnn）`・`（保留）`・`（未確定）`・`（未検証）`
-- **CLI `scripts/tri.py`**（標準ライブラリのみ）: `init`・`status`・`context`・`impact`・`check`・`gaps`・`task`・`note`・`log`・`id`・`graph`・`migrate`
+- **知識モデル**: Goal・Docs・Tasks（作業メモを含む）・引き継ぎ・CHANGELOG・常に守る規則（エージェントの指示ファイル）の置き場を更新契機と寿命で定義（docs/knowledge-model.md）。溜まり続ける置き場を作らない。Docs の差分マーカー `（計画: T-nnnn）`・`（保留）`・`（未確定）`・`（未検証）`
+- **CLI `scripts/tri.py`**（標準ライブラリのみ）: `init`・`status`・`context`・`impact`・`check`・`gaps`・`task`・`handoff`・`log`・`id`・`migrate`
 - **Context Resolver**（`context`）: Task・ID・見出し・コードパスを起点に、読むべきセクションだけを知識グラフから選定。選定理由・トークン予算・必須情報の省略の明示・依存が無い起点の語彙探索・関連の弱い候補の列挙
 - **変更影響の逆引き**（`impact`）: コード・文書の変更（`--git` は差分の行範囲）から見直すべき Docs と関係する進行中 Task
 - **検査**（`check`）: 参照切れ（ID・リンク・見出しアンカー・frontmatter）・ID 重複・履歴汚染の疑い（日英の言い回し・日付行・取り消し線）・重複記述・肥大化・完了済み Task を指す計画マーカー・Task 書式。`--changed` で CHANGELOG の記録漏れ・追記偏重・CHANGELOG の書き換え
-- **Task と完了ゲート**: AC ごとの検証コマンド実行と証跡記録（`task verify`・`task record`）、作業ツリー指紋による古い証跡の検出、`task close` のゲート
-- **Note**: 分類不要の追記・上書きの引き継ぎ・整理候補の提示・git 管理外のローカル領域（`.tri-ssd/`）
-- **フック**: SessionStart で現在位置を注入、PostToolUse で編集した Docs の検査結果を返し、docs/ の参照を記録。Python が無い環境では何もしない
-- **着手時点との比較**（`task verify --against-base`）: 検証を着手時点のコードでも実行し、そこでも通る（変更を確かめていない）検証を警告
+- **Task と完了ゲート**: AC ごとの検証コマンド実行と証跡記録（`task verify`・`task record`。AC ごとに最新の結果だけを残す）、作業ツリー指紋による古い証跡の検出、`task close` のゲート（関係する文書の誤りだけで止める）
 - **報告**（`task report`）: 目的・満たす仕様・検証・判断・変更・CHANGELOG を既存の記録から組み立てる。人間はコードの代わりにこれを読む
-- **書かれていない依存の候補**: `task close` が、Task の間に変更したコードを記述する Docs と参照した Docs のうち context に入っていなかったものを示す
+- **引き継ぎ**（`handoff`）: 上書きで1つ。個人用は git 管理外の `.tri-ssd/`
+- **テンプレート**（`templates/`）: Goal・Task・CHANGELOG の雛形
+- **フック**: SessionStart で現在位置を注入、PostToolUse で編集した Docs の検査結果を返す。Python が無い環境では何もしない
 - **旧構成からの移行**（`migrate`。既定はドライラン）
 - 自動テスト（unittest）・長期運用シミュレーション（`tests/simulate.py`）・コンテキスト効率の実測（`tests/eval_context.py`、docs/evaluation.md）
 
 ### Changed
 
-- Skill を 12 から 4 に統合: `setup`・`task`・`docs`・`note`
+- Skill を 12 から 3 に統合: `setup`・`task`・`docs`
 - 記載規約を「現在形で書く・追記せず置き換える・経緯は CHANGELOG/ADR」中心に改訂（docs/writing-rules.md）
 - このリポジトリ自身を Tri-SSD で管理（docs/goal.md・docs/requirements.md・docs/architecture.md・docs/tasks/）
 

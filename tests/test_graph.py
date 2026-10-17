@@ -13,16 +13,11 @@ class ClassifyAndIndexTest(ProjectCase):
         self.assertEqual(kinds["docs/search.md"], "doc")
         self.assertEqual(kinds["docs/tasks/T-0005-tag-search.md"], "task")
         self.assertEqual(kinds["docs/tasks/_done/T-0001-register.md"], "task_done")
-        self.assertEqual(kinds["docs/notes/inbox.md"], "note")
+        self.assertEqual(kinds["docs/notes/handoff.md"], "note")
         self.assertEqual(kinds["CHANGELOG.md"], "changelog")
         self.assertTrue(p.docs["docs/adr/0001-sqlite-fts.md"].history_allowed)
         self.assertFalse(p.docs["docs/search.md"].history_allowed)
 
-    def test_local_notes_are_notes(self):
-        self.write(".tri-ssd/notes/me.md", "# me\n\n## 2026-10-01 T-0005 local\n")
-        p = self.project()
-        self.assertEqual(p.docs[".tri-ssd/notes/me.md"].kind, "note")
-        self.assertTrue(p.docs[".tri-ssd/notes/me.md"].local)
 
     def test_definitions(self):
         p = self.project()
@@ -56,7 +51,7 @@ class ContextTest(ProjectCase):
         r = resolve.context(self.project(), ["T-0005"])
         k = self.keys(r)
         for need in ("docs/requirements.md#req-0004-タグ検索", "docs/search.md#タグ検索", "docs/api.md#get-search",
-                     "docs/goal.md#原則", "docs/notes/inbox.md#2026-10-10-t-0005-タグ補完の並び順"):
+                     "docs/goal.md#原則", "docs/notes/handoff.md#引き継ぎ"):
             self.assertIn(need, k)
         for noise in ("docs/sync.md", "docs/ui.md", "docs/security.md", "docs/operations.md", "docs/glossary.md"):
             self.assertNotIn(noise, self.files(r))

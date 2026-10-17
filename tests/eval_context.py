@@ -38,8 +38,7 @@ CASES = [
         "id": "L1", "corpus": LB, "seeds": ["T-0005"], "what": "Task: タグ検索（AND/OR・補完）",
         "required": [f"{REQ}0004-タグ検索", "docs/search.md#タグ検索", "docs/search.md#性能予算",
                      "docs/api.md#get-search", "docs/api.md#get-tagssuggest", "docs/data.md#tag",
-                     "docs/security.md#認可",  # 横断制約: 全クエリを利用者 ID で絞る
-                     "docs/notes/inbox.md#2026-10-10-t-0005-タグ補完の並び順"],
+                     "docs/security.md#認可"],  # 横断制約: 全クエリを利用者 ID で絞る
         "acceptable": ["docs/goal.md*", "docs/search.md*", "docs/architecture.md*", "docs/requirements.md#要求",
                        "docs/notes/handoff.md*", "docs/api.md#http-api", "docs/api.md#検索", "docs/ui.md#検索の操作",
                        "docs/data.md#概念モデル", "docs/data.md#データ設計"],
@@ -141,7 +140,7 @@ def growth(cycles: int = 40) -> list[dict]:
 
 
 def table(results: list[dict]) -> str:
-    lines = ["| ケース | 内容 | 全文（Goal+Docs / +Task・Note） | context | 削減 | 取得率 | 混入率 | 欠落（未選定の必要情報） |",
+    lines = ["| ケース | 内容 | 全文（Goal+Docs / +Task・引き継ぎ） | context | 削減 | 取得率 | 混入率 | 欠落（未選定の必要情報） |",
              "|---|---|---|---|---|---|---|---|"]
     for r in results:
         missed = "・".join(f"`{m}`" + ("（弱い候補に列挙）" if m in r["weak"] else "") for m in r["missed"]) or "なし"
@@ -151,7 +150,7 @@ def table(results: list[dict]) -> str:
 
 
 def growth_table(rows: list[dict]) -> str:
-    lines = ["| サイクル | Goal+Docs | context（最新 Task） | 検査エラー | Notes |", "|---|---|---|---|---|"]
+    lines = ["| サイクル | Goal+Docs | context（最新 Task） | 検査エラー | 一時情報（引き継ぎ＋メモ） |", "|---|---|---|---|---|"]
     for r in rows:
         lines.append(f"| {r['cycle']} | {r['docs_tokens']} | {r['context_tokens']} | {r['errors']} | {r['notes_tokens']} |")
     return "\n".join(lines)

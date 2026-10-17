@@ -8,34 +8,15 @@ from pathlib import Path
 from . import md, notes, tasks
 from .project import CHANGELOG, DONE, GOAL, MARKER_RE, NOTES, TASKS, Project
 
-GOAL_TEMPLATE = """# {name} Goal
+TEMPLATES = Path(__file__).resolve().parents[2] / "templates"
 
-<!-- 実現手段に依存しない目的と成功状態。日々の進捗では書き換えない。
-     context で常に読み込まれるため短く保つ（目安 1500 トークン以内）。 -->
 
-## 目的
-
-<!-- 誰のどんな問題を解決するか -->
-
-## 成功状態
-
-<!-- 何が成立していれば成功か（観測可能な形で） -->
-
-## 原則
-
-<!-- 迷ったときの判断基準（任意・1〜3個） -->
-
-## やらないこと
-
-<!-- スコープ外と決めたこと（任意） -->
-"""
-
-CHANGELOG_TEMPLATE = """# Changelog
-
-仕様・設計・契約の意味のある変更履歴。形式は [Keep a Changelog](https://keepachangelog.com/ja/1.1.0/) に準拠。
-
-## [Unreleased]
-"""
+def template(file: str, **values: str) -> str:
+    """templates/<file> を読み、{{key}} を置き換える（書式の正はテンプレートファイル）。"""
+    text = (TEMPLATES / file).read_text(encoding="utf-8")
+    for k, v in values.items():
+        text = text.replace("{{" + k + "}}", v)
+    return text
 
 CHANGE_TYPES = ("Added", "Changed", "Deprecated", "Removed", "Fixed", "Security")
 
@@ -50,11 +31,11 @@ def init(root: Path, name: str | None = None) -> list[str]:
             created.append(d + "/")
     goal = root / GOAL
     if not goal.exists():
-        goal.write_text(GOAL_TEMPLATE.format(name=name or root.resolve().name), encoding="utf-8")
+        goal.write_text(template("goal.md", name=name or root.resolve().name), encoding="utf-8")
         created.append(GOAL)
     cl = root / CHANGELOG
     if not cl.exists():
-        cl.write_text(CHANGELOG_TEMPLATE, encoding="utf-8")
+        cl.write_text(template("changelog.md"), encoding="utf-8")
         created.append(CHANGELOG)
     if not (root / ".tri-ssd" / ".gitignore").exists():
         notes.ensure_local(root)
@@ -120,11 +101,6 @@ def status(p: Project, script: str, hook: bool = False) -> str:
         for k, *_ in mk:
             c[k] = c.get(k, 0) + 1
         out.append("差分マーカー: " + " / ".join(f"{k} {v}" for k, v in c.items()) + "（tri gaps で一覧）")
-    ents = notes.entries(p)
-    if ents:
-        need = sum(1 for e in ents if e.flags)
-        out.append(f"Notes: {len(ents)} 件・約 {sum(e.tokens for e in ents)} トークン"
-                   + (f"、整理候補 {need} 件（tri note triage）" if need else ""))
     out.append(f"CLI: python3 {script} <command>（context <Task-ID> --emit で作業に必要な文脈を取得）")
     return "\n".join(out)
 
@@ -134,7 +110,7 @@ def log(root: Path, kind: str, text: str, refs: list[str]) -> str:
     if kind not in CHANGE_TYPES:
         raise SystemExit(f"error: 種別は {', '.join(CHANGE_TYPES)} のいずれか")
     path = root / CHANGELOG
-    content = path.read_text(encoding="utf-8") if path.exists() else CHANGELOG_TEMPLATE
+    content = path.read_text(encoding="utf-8") if path.exists() else template("changelog.md")
     lines = content.splitlines()
     head = next((i for i, x in enumerate(lines) if re.match(r"^## \[?Unreleased\]?", x, re.I)), None)
     if head is None:

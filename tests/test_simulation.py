@@ -23,7 +23,8 @@ class SimulationTest(unittest.TestCase):
         self.assertFalse(any(r["old_storage_text"] for r in self.good[3:]))
 
     def test_notes_do_not_accumulate(self):
-        self.assertEqual(len({r["notes_tokens"] for r in self.good}), 1)
+        tokens = [r["notes_tokens"] for r in self.good]
+        self.assertLess(max(tokens) - min(tokens), 30)  # 引き継ぎの文面の差だけ。サイクルを重ねても増えない
 
     def test_docs_grow_linearly_with_spec_not_history(self):
         growth = [b["docs_tokens"] - a["docs_tokens"] for a, b in zip(self.good, self.good[1:])]
@@ -40,7 +41,7 @@ class SimulationTest(unittest.TestCase):
         self.assertGreaterEqual(last["stale_marker"], 6)
         self.assertGreaterEqual(last["history"], 1)
         self.assertTrue(last["old_storage_text"])
-        self.assertGreater(last["notes_tokens"], self.bad[0]["notes_tokens"] * 4)
+        self.assertGreater(last["notes_tokens"], self.bad[0]["notes_tokens"] * 2)  # 上書きせず溜めた引き継ぎ
 
 
 if __name__ == "__main__":

@@ -18,7 +18,6 @@ TASKS = "docs/tasks"
 DONE = "docs/tasks/_done"
 NOTES = "docs/notes"
 LOCAL = ".tri-ssd"
-LOCAL_NOTES = ".tri-ssd/notes"
 GOAL = "docs/goal.md"
 CHANGELOG = "CHANGELOG.md"
 
@@ -69,7 +68,7 @@ def classify(rel: str) -> str:
         return "task_done"
     if rel.startswith(TASKS + "/"):
         return "task"
-    if rel.startswith(NOTES + "/") or rel.startswith(LOCAL_NOTES + "/"):
+    if rel.startswith(NOTES + "/"):
         return "note"
     return "doc"
 
@@ -85,7 +84,7 @@ class Project:
 
     # --- 読み込み ---------------------------------------------------------------
     def _files(self):
-        for base in (DOCS, LOCAL_NOTES):
+        for base in (DOCS,):
             d = self.root / base
             if d.is_dir():
                 yield from sorted(p for p in d.rglob("*.md") if p.is_file())

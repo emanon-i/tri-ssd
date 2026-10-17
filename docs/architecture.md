@@ -14,7 +14,7 @@ flowchart LR
     CLI --> Resolve[resolve.py<br>context / impact]
     CLI --> Check[check.py<br>検査]
     CLI --> Tasks[tasks.py<br>Task・証跡・ゲート]
-    CLI --> Notes[notes.py]
+    CLI --> Notes[notes.py<br>引き継ぎ]
     CLI --> Admin[admin.py<br>init・status・log・migrate]
     Resolve --> Project
     Check --> Project
@@ -26,6 +26,7 @@ flowchart LR
 | CLI | 決定的処理の入口。Python 3.9+ の標準ライブラリのみ（REQ-0009） | `scripts/tri.py` |
 | 知識グラフ | 文書の分類・セクション・ID 定義・エッジを毎回元データから導出する。索引ファイル・キャッシュは持たない | `scripts/trissd/project.py` |
 | Markdown 解析 | frontmatter・見出し・ID・リンク・コードパス・トークン推定 | `scripts/trissd/md.py` |
+| テンプレート | Goal・Task・CHANGELOG の雛形。書式の正（CLI はこれを写すだけ） | `templates/` |
 | Hooks | セッション開始時の状況注入と、Docs 編集直後の検査 | `hooks/hooks.json` |
 
 Skills は [知識モデル](knowledge-model.md) と [記載規約](writing-rules.md) を参照し、規約を複製しない。
@@ -101,43 +102,23 @@ ID の定義: Task は frontmatter `id`、REQ は Goal・Docs の見出しの先
 `task close` は REQ-0005 を実現する。以下をすべて満たすと `status: done` にして `docs/tasks/_done/` へ移す。
 
 1. 受け入れ条件が1つ以上ある
-2. 全 AC の最新の検証記録が PASS
+2. 全 AC の検証記録が PASS（検証記録は AC ごとに最新の結果だけを残す。完了時点の判断に要るのはそれだけ）
 3. コマンドの証跡の作業ツリー指紋が現在と一致する。指紋は `docs/`・`.tri-ssd/`・`CHANGELOG.md` を除く作業ツリーの git tree id（コミットの有無に依存しない）。手で確かめた記録は指紋で失効させない
 4. Goal・Docs にこの Task を指す `（計画: T-nnnn）` が残っていない
-5. この Task に関係する文書（Task 自身・参照先・着手後に差分のある文書）に `check` のエラーが無い。無関係な文書の誤りでは止めない
+5. この Task に関係する文書（Task 自身・参照先・着手後に差分のある文書）に `check` のエラーが無い。無関係な文書の誤りでは止めない。「着手後」の基準は `task start`（または最初の `task verify`）が frontmatter に記録する `base`（着手時点のコミット）
 
 `--force` は理由を検証記録に残して完了させる。ゲートを厳しくしすぎると強制完了が常態化して信用を失うため、機械で確実に判定できる条件だけをゲートにする。
 
-### 着手時点との比較
-
-`task verify --against-base` は、通った検証コマンドを着手時点（`base`）のコードでも実行する。base の作業ツリーを一時的に作り、検証コマンドが名指しする変更済みファイル（新しいテスト等）だけを現在の内容で重ねる。
-
-- 着手時点では落ちる: 検証は変更を確かめている
-- 着手時点でも通る: 振る舞いを変えない Task でなければ、検証は変更を確かめていない（警告。ゲートではない）
-
-結果は検証記録に `AC1 着手時点 FAIL` の形で残り、報告に表示される。
-
 ### 報告
 
-`task report` は、人間がコードを読む代わりに読む報告を既存の記録から組み立てる: 目的の状態・満たす仕様（refs の見出しと1行目）・AC ごとの方法と結果と着手時点との比較・`## 判断` 節・着手後の変更ファイル・CHANGELOG の記載。
-
-### 書かれていない依存の候補
-
-完了時に、context が選ばなかったのにこの Task で必要になった Docs を示す（ゲートではなく提案）。基準は `task start`（または最初の `task verify`）が frontmatter に記録する `started`（時刻）と `base`（コミット）。
-
-- 変更: `base` から現在までに差分のあるコードを、名指し・包含して記述するセクション（逆引きと同じ規則）
-- 参照: `started` 以降に Read・Bash で参照した `docs/` の節（`.tri-ssd/reads.log`。git 管理外）
-
-エージェントは必要だったものを Task の `refs` や仕様本文のリンクとして書き足す。次回から context に入る。
+`task report` は、人間がコードを読む代わりに読む報告を既存の記録から組み立てる: 目的の状態・満たす仕様（refs の見出し）・AC ごとの方法と結果・`## 判断` 節・着手後の変更ファイル・CHANGELOG の記載。Goal にどう近づいたかは意味の判断なので、エージェントが完了報告で自分の言葉で述べる。
 
 ## フック
-
 
 | イベント | 処理 |
 |---|---|
 | SessionStart（startup・resume・clear・compact） | `status --hook`: Tri-SSD プロジェクトなら状況を出力し文脈に入れる（REQ-0007）。そうでなければ何も出さない |
 | PostToolUse（Edit・Write・MultiEdit） | `check --hook`: 編集した `docs/` の文書に関する指摘だけを `additionalContext` で返す |
-| PostToolUse（Read・Bash） | `track --hook`: `docs/` の文書の参照を `.tri-ssd/reads.log` に記録する（出力なし） |
 
 フックは `python3`、次に `python` で実行し、どちらも無ければ何もしない（Skill の手順だけで全機能が使える。フックは自動化の保険）。
 

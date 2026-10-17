@@ -29,7 +29,7 @@
 
 **良い例:**
 - `docs` - Goal・Docs の作成と改訂（更新プロトコル）
-- `note` - 一時情報の記録・引き継ぎ・整理
+- `setup` - 導入・移行（1回だけ使う）
 
 **避けるべき例:**
 - `trissd-all` - 全レイヤーを一度に生成（責任が広すぎる）
@@ -116,7 +116,7 @@ allowed-tools: Read, Write, Edit, Glob, Grep
 
 - `PREFIX-nnnn`（REQ, T。旧形式の PH, F は互換）
 - 採番は `tri id <PREFIX>` / `tri task new`（自前実装しない）
-- 一度使った番号は再利用しない（完了 Task・Note・CHANGELOG も走査対象）
+- 一度使った番号は再利用しない（完了 Task・引き継ぎ・CHANGELOG も走査対象）
 
 ---
 

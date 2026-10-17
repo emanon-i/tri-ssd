@@ -8,9 +8,9 @@
     python3 tri.py impact --git                 # 作業差分から見直すべき Docs を逆引き
     python3 tri.py check [--changed]            # 参照切れ・履歴汚染・重複・肥大化の検査
     python3 tri.py task new|list|verify|record|close|drop|start ...
-    python3 tri.py note add|handoff|triage ...
+    python3 tri.py handoff "現在位置・次の一手"     # 引き継ぎを上書き
     python3 tri.py log Changed "..." --refs T-0003
-    python3 tri.py gaps | id T | graph | init | migrate [--apply]
+    python3 tri.py gaps | id T | init | migrate [--apply]
 
 終了コード: 0 = 正常 / 1 = 検査エラー・ゲート未達 / 2 = 引数・対象の誤り / 3 = 予算超過で必須情報を省略
 """
@@ -33,7 +33,7 @@ if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8")
     sys.stderr.reconfigure(encoding="utf-8")
 
-from trissd import admin, check, discover, md, notes, resolve, tasks  # noqa: E402
+from trissd import admin, check, md, notes, resolve, tasks  # noqa: E402
 from trissd.project import Project  # noqa: E402
 
 SCRIPT = Path(__file__).resolve().as_posix()
@@ -72,12 +72,6 @@ def cmd_context(a):
     p = Project(a.root)
     r = resolve.context(p, a.seeds, a.budget, a.query, not a.no_goal, min_include=a.min_score)
     ms = (time.perf_counter() - t0) * 1000
-    if a.json:
-        print(json.dumps({
-            "seeds": r.seeds, "budget": r.budget, "used": r.used, "full_docs_tokens": r.full_tokens, "ms": round(ms, 1),
-            "selected": [vars(i) for i in r.selected], "omitted": [vars(i) for i in r.omitted],
-            "weak": [vars(i) for i in r.weak], "code": r.code, "unknown": r.unknown, "warnings": r.warnings}, ensure_ascii=False, indent=1))
-        return 2 if r.unknown else (3 if r.omitted_must else 0)
     print(f"# context: {' '.join(a.seeds) or a.query}（使用 {r.used} / 予算 {r.budget or '無制限'} トークン。"
           f"Goal+Docs 全文は約 {r.full_tokens}。{ms:.0f}ms）")
     for w in r.warnings:
@@ -178,10 +172,6 @@ def cmd_impact(a):
         return 0
     p = Project(root)
     res = resolve.impact(p, paths, lines)
-    if a.json:
-        print(json.dumps({"docs": {k: [vars(h) for h in v] for k, v in res["docs"].items()},
-                          "tasks": res["tasks"], "uncovered": res["uncovered"]}, ensure_ascii=False, indent=1))
-        return 0
     print(f"# impact: {len(paths)} パス")
     if res["docs"]:
         print("\n## 見直すべき Docs（記述が変更後の実装と一致しているか確認）")
@@ -231,21 +221,10 @@ def cmd_check(a):
             print(json.dumps({"hookSpecificOutput": {"hookEventName": "PostToolUse", "additionalContext": msg}},
                              ensure_ascii=False))
         return 0
-    if a.json:
-        print(json.dumps([vars(i) for i in issues], ensure_ascii=False, indent=1))
-    else:
-        for i in issues:
-            print(i)
-        print(f"\n検査完了: エラー {len(errs)} / 警告 {len(issues) - len(errs)}")
+    for i in issues:
+        print(i)
+    print(f"\n検査完了: エラー {len(errs)} / 警告 {len(issues) - len(errs)}")
     return 1 if errs or (a.strict and issues) else 0
-
-
-def cmd_track(a):
-    data = _stdin_json()
-    root = Path(data.get("cwd") or a.root)
-    if admin.is_project(root):
-        discover.track(root, data)
-    return 0
 
 
 def cmd_gaps(a):
@@ -293,14 +272,6 @@ def cmd_task(a):
         for ac, res, detail in results:
             print(f"- {ac.label} {res}  {detail}")
             bad += res == "FAIL"
-        if a.against_base:
-            passed = [ac.label for ac, res, _ in results if res == "PASS"]
-            base = tasks.against_base(Project(a.root), a.id, passed)
-            if not base and passed:
-                print("\n着手時点との比較: 実行できません（着手時点のコミット base が無い、または git 管理外）")
-            for label, res in base.items():
-                note = "→ 変更を確かめている" if res == "FAIL" else "→ ⚠️ 着手時点でも通る（振る舞いを変えない Task でなければ、この検証は変更を確かめていない）"
-                print(f"- {label} 着手時点 {res}  {note}")
         manual = [ac.label for ac, res, _ in results if res == "MANUAL"]
         if manual:
             print(f"\n手動確認が必要: {', '.join(manual)} → 確認後 task record {a.id} <AC> pass --note \"確認内容\"")
@@ -314,8 +285,6 @@ def cmd_task(a):
         print(tasks.record(p, a.id, a.ac, a.result, a.note))
         return 0
     if a.tcmd in ("close", "drop"):
-        doc = tasks.find_task(p, a.id)
-        found = discover.discoveries(p, doc) if doc and a.tcmd == "close" else []
         fails, dest = tasks.close(p, a.id, a.force if a.tcmd == "close" else a.reason, drop=a.tcmd == "drop")
         if dest is None:
             print(f"# {a.id} は完了条件を満たしていません")
@@ -324,41 +293,15 @@ def cmd_task(a):
         if fails:
             print("⚠️  ゲート未達のまま強制完了:\n" + "\n".join(f"- {f}" for f in fails))
         print(f"{a.id}: {'中止' if a.tcmd == 'drop' else '完了'} → {dest}")
-        if found:
-            print("\n## context に入っていなかったが、この Task で変更・参照に関係した Docs（書かれていない依存の候補）")
-            for key, why in found:
-                print(f"- {key}  ← {why}")
-            print("必要だったものは Task の refs や仕様本文のリンクとして書き足す（次回から context に入る）。無関係なら無視してよい")
-        p2 = Project(a.root)
-        related = [e for e in notes.entries(p2) if a.id in e.refs]
-        if related:
-            print("\n## この Task に言及するノート（昇格 or 削除を判断）")
-            for e in related:
-                print(f"- {e.path}:{e.line} {e.title}")
         print("\n次: 仕様・設計に意味のある変更があれば `log` で CHANGELOG に記録。"
               "`impact --git` で見直すべき Docs を確認")
         return 0
     return 2
 
 
-def cmd_note(a):
-    p = Project(a.root)
-    if a.ncmd == "add":
-        print(f"追記: {notes.add(p, a.text, a.task, a.local, a.file)}")
-        return 0
-    if a.ncmd == "handoff":
-        text = sys.stdin.read() if a.text == "-" else a.text
-        print(f"更新: {notes.handoff(p, text, a.local)}（上書き。過去の引き継ぎは残らない）")
-        return 0
-    ents = notes.entries(p)
-    total = sum(e.tokens for e in ents)
-    print(f"# ノート整理候補（{len(ents)} 件・約 {total} トークン）")
-    print("判断: 継続的に真な仕様・設計 → Docs / 未達事項 → Task / 再利用手順 → Docs の手順書（将来 Skill 候補）"
-          " / 再開に必要 → 残す / 不要 → 削除\n")
-    for e in sorted(ents, key=lambda e: (not e.flags, -(e.age or 0))):
-        refs = ", ".join(f"{r}[{p.task_status(r) or '-'}]" if p.task_status(r) else r for r in e.refs)
-        print(f"- {e.path}:{e.line}  {e.title}  {e.tokens}t  {e.age if e.age is not None else '?'}日"
-              f"{'  refs: ' + refs if refs else ''}{'  ⚑ ' + ','.join(e.flags) if e.flags else ''}")
+def cmd_handoff(a):
+    text = sys.stdin.read() if a.text == "-" else a.text
+    print(f"更新: {notes.handoff(Project(a.root), text, a.local)}（上書き。過去の引き継ぎは残らない）")
     return 0
 
 
@@ -372,25 +315,6 @@ def cmd_id(a):
     n = p.max_id(a.prefix)
     for i in range(a.count):
         print(f"{a.prefix}-{n + 1 + i:04d}")
-    return 0
-
-
-def cmd_graph(a):
-    p = Project(a.root)
-    edges = sorted({(e.src, e.kind, p.resolve(e.dst) or e.dst) for e in p.edges if e.kind != "contains"})
-    if a.format == "json":
-        print(json.dumps([{"src": s, "kind": k, "dst": d} for s, k, d in edges], ensure_ascii=False, indent=1))
-    elif a.format == "mermaid":
-        nid = lambda n: "n" + str(abs(hash(n)) % 10 ** 8)  # noqa: E731
-        print("flowchart LR")
-        for n in sorted({x for s, _, d in edges for x in (s, d)}):
-            print(f'    {nid(n)}["{n}"]')
-        for s, k, d in edges:
-            print(f"    {nid(s)} -->|{k}| {nid(d)}")
-    else:
-        for s, k, d in edges:
-            print(f"{s} -{k}-> {d}")
-        print(f"\n文書 {len(p.docs)} / セクション {len(p.sections)} / ID {len(p.defs)} / エッジ {len(edges)}")
     return 0
 
 
@@ -420,7 +344,6 @@ def build_parser() -> argparse.ArgumentParser:
     s.add_argument("--budget", type=int, default=6000, help="トークン予算（0 = 無制限。既定 6000）")
     s.add_argument("--query", help="キーワード探索を併用（依存が不明なとき）")
     s.add_argument("--emit", action="store_true", help="選定セクションの本文も出力する")
-    s.add_argument("--json", action="store_true")
     s.add_argument("--no-goal", action="store_true", help="Goal を含めない")
     s.add_argument("--min-score", type=float, default=resolve.MIN_INCLUDE,
                    help=f"必須でない項目の選定下限（既定 {resolve.MIN_INCLUDE}。0 で予算まで詰める）")
@@ -429,7 +352,6 @@ def build_parser() -> argparse.ArgumentParser:
     s = sub.add_parser("impact", help="変更パスから見直すべき Docs・関係 Task を逆引き")
     s.add_argument("paths", nargs="*")
     s.add_argument("--git", nargs="?", const="HEAD", help="git の作業差分を対象にする（既定 base: HEAD）")
-    s.add_argument("--json", action="store_true")
     s.set_defaults(fn=cmd_impact)
 
     s = sub.add_parser("check", help="参照切れ・ID 重複・履歴汚染・重複記述・肥大化・マーカー・Task 書式")
@@ -437,12 +359,7 @@ def build_parser() -> argparse.ArgumentParser:
     s.add_argument("--file", help="指定ファイルの指摘だけを表示")
     s.add_argument("--hook", action="store_true", help="PostToolUse フック用（stdin の JSON を読む）")
     s.add_argument("--strict", action="store_true", help="警告でも終了コード 1")
-    s.add_argument("--json", action="store_true")
     s.set_defaults(fn=cmd_check)
-
-    s = sub.add_parser("track", help="PostToolUse フック用: docs/ の参照を .tri-ssd/reads.log に記録")
-    s.add_argument("--hook", action="store_true")
-    s.set_defaults(fn=cmd_track)
 
     s = sub.add_parser("gaps", help="Docs の差分マーカー（計画・保留・未確定・未検証）と未追跡 REQ の一覧")
     s.set_defaults(fn=cmd_gaps)
@@ -465,8 +382,6 @@ def build_parser() -> argparse.ArgumentParser:
     t = ts.add_parser("verify", help="AC の 検証: `cmd` を実行し証跡を記録")
     t.add_argument("id")
     t.add_argument("--ac", nargs="*", help="対象 AC（既定: 全 AC）")
-    t.add_argument("--against-base", action="store_true",
-                   help="通った検証を着手時点のコードでも実行し、変更を確かめているか（着手時点では落ちるか）を記録")
     t = ts.add_parser("report", help="人間向けの報告（目的・満たす仕様・検証・判断・変更・CHANGELOG）を既存の記録から組み立てる")
     t.add_argument("id")
     t = ts.add_parser("record", help="手動確認の結果を記録")
@@ -482,18 +397,10 @@ def build_parser() -> argparse.ArgumentParser:
     t.add_argument("--reason", required=True)
     s.set_defaults(fn=cmd_task)
 
-    s = sub.add_parser("note", help="ノートの追記・引き継ぎ・整理候補")
-    ns = s.add_subparsers(dest="ncmd", required=True)
-    n = ns.add_parser("add")
-    n.add_argument("text")
-    n.add_argument("--task")
-    n.add_argument("--local", action="store_true", help=".tri-ssd/notes/（git 管理外）に書く")
-    n.add_argument("--file", default=notes.INBOX)
-    n = ns.add_parser("handoff", help="引き継ぎを上書き（- で stdin）")
-    n.add_argument("text")
-    n.add_argument("--local", action="store_true")
-    ns.add_parser("triage")
-    s.set_defaults(fn=cmd_note)
+    s = sub.add_parser("handoff", help="引き継ぎ（現在位置・次の一手・未解決の問い）を上書き。- で stdin")
+    s.add_argument("text")
+    s.add_argument("--local", action="store_true", help=".tri-ssd/（git 管理外）に書く")
+    s.set_defaults(fn=cmd_handoff)
 
     s = sub.add_parser("log", help="CHANGELOG の [Unreleased] に追記")
     s.add_argument("type", help="Added / Changed / Deprecated / Removed / Fixed / Security")
@@ -505,10 +412,6 @@ def build_parser() -> argparse.ArgumentParser:
     s.add_argument("prefix", choices=md.ID_PREFIXES)
     s.add_argument("--count", type=int, default=1)
     s.set_defaults(fn=cmd_id)
-
-    s = sub.add_parser("graph", help="知識グラフのエッジを出力")
-    s.add_argument("--format", choices=("edges", "mermaid", "json"), default="edges")
-    s.set_defaults(fn=cmd_graph)
 
     s = sub.add_parser("migrate", help="旧 Tri-SSD（L0-L3）から移行（既定はドライラン）")
     s.add_argument("--apply", action="store_true")

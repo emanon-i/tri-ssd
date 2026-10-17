@@ -2,7 +2,7 @@
 
 AI コーディングエージェントによる長期開発のための、知識ライフサイクル管理とコンテキスト最適化のハーネス（Claude Code プラグイン）。
 
-- **知識を寿命で分ける**: Goal（目的）・Docs（あるべき状態）・Tasks（差分を解消する作業）・Notes（一時情報）・CHANGELOG（変更履歴）
+- **知識を寿命で分ける**: Goal（目的）・Docs（あるべき状態）・Tasks（差分を解消する作業。作業メモも Task の中）・引き継ぎ（上書きで1つ）・CHANGELOG（変更履歴）。溜まり続ける置き場を作らない
 - **必要な部分だけ読む**: Task・ID・コードパスを起点に、読むべきセクションだけを知識グラフから選ぶ（理由・予算・省略の明示付き）
 - **文書を腐らせない**: 参照切れ・履歴汚染・重複・肥大化を機械的に検出し、Docs を現在形のまま保つ
 - **完了を証拠で決める**: 受け入れ条件ごとの検証証跡と、証跡取得後のコード変更検知による完了ゲート
@@ -20,13 +20,12 @@ AI コーディングエージェントによる長期開発のための、知�
 
 | Skill | 使う場面 |
 |---|---|
-| `/tri-ssd:task` | 実装・バグ修正・Task の作成・検証・完了・作業の再開 |
+| `/tri-ssd:task` | 実装・バグ修正・Task の作成・検証・完了・作業の再開・作業メモ・引き継ぎ |
 | `/tri-ssd:docs` | Goal・仕様・設計の作成と改訂、判断の記録 |
-| `/tri-ssd:note` | 作業メモ・引き継ぎ・ノートの整理 |
 | `/tri-ssd:setup` | 初期化・既存プロジェクトへの導入・旧版からの移行 |
 
 Skill は会話の内容から自動で選ばれる。名前を覚える必要はない。
-プラグインはフックを登録する: セッション開始時に現在位置を文脈へ入れ、`docs/` の Markdown を編集した直後に検査結果を返し、`docs/` の参照を個人用領域に記録する（Task 完了時に「書かれていない依存の候補」を示すため）。Tri-SSD プロジェクト以外や Python が見つからない環境では何もしない。
+プラグインは2つのフックを登録する: セッション開始時に現在位置を文脈へ入れ、`docs/` の Markdown を編集した直後に検査結果を返す。Tri-SSD プロジェクト以外や Python が見つからない環境では何もしない。
 
 ## 初期化
 
@@ -40,12 +39,13 @@ python3 <plugin>/scripts/tri.py init --name "My App"
 docs/
   goal.md          # Goal: 目的・成功状態・原則・やらないこと（常に読まれるので短く）
   tasks/           # Task（完了すると tasks/_done/ へ）
-  notes/           # 共有ノート（handoff.md = 引き継ぎ）
+  notes/handoff.md # 引き継ぎ（上書き。現在位置は常に1つ）
 CHANGELOG.md       # 意味のある変更の履歴（Keep a Changelog）
-.tri-ssd/          # 個人用ノート（自身の .gitignore で git 管理外）
+.tri-ssd/          # 個人用の引き継ぎ（自身の .gitignore で git 管理外）
 ```
 
 Docs は `docs/` 配下に自由に置く（例: `requirements.md`・`architecture.md`・`api.md`・`adr/`）。分類の基準は更新契機と寿命。
+どの作業でも守る短い規則（例: 全クエリを利用者 ID で絞る）は、エージェントが常に読む指示ファイル（`CLAUDE.md`・`AGENTS.md`）に1規則1行で書く。
 
 ## 日常の使い方
 
@@ -56,11 +56,11 @@ Docs は `docs/` 配下に自由に置く（例: `requirements.md`・`architectu
 | 現在位置 | `tri status` |
 | 作業に必要な文脈 | `tri context T-0003 --emit`（`REQ-0004`・`docs/x.md#見出し`・`src/path.py` も起点にできる） |
 | 差分の一覧 | `tri gaps`（Docs の `（計画: T-nnnn）`・`（未確定）` 等と、Task から参照されていない REQ） |
-| Task | `tri task new "題" --refs REQ-0004 --code src/search/` → `task verify [--against-base]` → `task report` → `task close` |
+| Task | `tri task new "題" --refs REQ-0004 --code src/search/` → `task verify` → `task report` → `task close` |
 | 変更の影響 | `tri impact --git`（作業差分から見直すべき Docs と関係 Task） |
 | 検査 | `tri check [--changed]` |
 | 変更履歴 | `tri log Changed "何を・なぜ" --refs T-0003` |
-| ノート | `tri note add "..." --task T-0003`・`tri note handoff -`・`tri note triage` |
+| 引き継ぎ | `tri handoff -`（標準入力から。上書き） |
 
 `tri` は `python3 <plugin>/scripts/tri.py` の略。プロジェクトルートで実行する（または `--root`）。
 
@@ -68,9 +68,9 @@ Docs は `docs/` 配下に自由に置く（例: `requirements.md`・`architectu
 
 1. あるべき状態を Docs に書く（未実装の記述には `（計画: T-nnnn）`）
 2. `task new` で差分を Task にし、受け入れ条件と `検証:` コマンドを書く
-3. `context` で必要な節だけ読んで実装し、発見は `note add`
+3. `context` で必要な節だけ読んで実装し、発見は Task の `## メモ` に書く
 4. Docs を実装後の状態に置き換え（計画マーカーを外す）、`task verify` → `task close`
-5. 意味のある変更を `log`、ノートを整理し、`note handoff` で引き継ぐ
+5. 意味のある変更を `log`、`handoff` で引き継ぐ（メモは Task と一緒に退場する）
 
 ## 既存プロジェクトへの導入
 
@@ -97,7 +97,7 @@ tri check            # 参照切れの確認
 | `l2_foundation/**` | `docs/design/**` |
 | `l3_phases/PH-*`（フォルダ形式は1ファイルに統合） | `docs/tasks/`（planned→open・in_progress→active・done は `_done/`） |
 | `l3_phases/_archive/**` | `docs/tasks/_done/**` |
-| `l0_ideas/**` | `docs/notes/ideas/**` |
+| `l0_ideas/**` | `docs/notes/ideas/**`（移行時に一度見直し、Task・Docs にするか削除する） |
 | `<!-- TODO: 要確認 -->`・`（未確認…）` | `（未確定）`・`（未検証）` |
 
 PH・F の ID は互換のため引き続き有効。新しい Task は `T-nnnn`。旧スキルとの対応:

@@ -1,6 +1,6 @@
 ---
 description: プロジェクトに Tri-SSD を導入する。新規プロジェクトの初期化、既存プロジェクトへの導入（既存コード・文書から Goal と最小限の Docs を起こす）、旧 Tri-SSD（L0〜L3 構成）からの移行を行う。
-when_to_use: Tri-SSD を始めたい・導入したい・セットアップして・初期化して・既存プロジェクトに入れたい・旧バージョンの Tri-SSD から移行したい・l1_requirements や l3_phases がある、と言われたとき。英語では set up Tri-SSD / adopt / migrate from v5。導入済みのプロジェクトでの作業は task・docs・note を使う。
+when_to_use: Tri-SSD を始めたい・導入したい・セットアップして・初期化して・既存プロジェクトに入れたい・旧バージョンの Tri-SSD から移行したい・l1_requirements や l3_phases がある、と言われたとき。英語では set up Tri-SSD / adopt / migrate from v5。導入済みのプロジェクトでの作業は task・docs を使う。
 argument-hint: "[new | adopt | migrate]"
 allowed-tools: Read, Edit, Write, Glob, Grep, Bash
 ---
@@ -8,7 +8,7 @@ allowed-tools: Read, Edit, Write, Glob, Grep, Bash
 # Tri-SSD を導入する
 
 <tri_ssd_context>
-Tri-SSD: Goal（docs/goal.md）・Docs（docs/ のあるべき状態）・Tasks（docs/tasks/ 差分を解消する検証可能な作業）・Notes（docs/notes/・.tri-ssd/notes/ 一時情報）・CHANGELOG（意味のある変更の履歴）。
+Tri-SSD: Goal（docs/goal.md）・Docs（docs/ のあるべき状態）・Tasks（docs/tasks/ 差分を解消する検証可能な作業。作業メモも Task の中）・引き継ぎ（docs/notes/handoff.md）・CHANGELOG（意味のある変更の履歴）。常に守る規則はエージェントが常に読む指示ファイル（CLAUDE.md・AGENTS.md）に置く。
 決定的処理は CLI `python3 "${CLAUDE_SKILL_DIR}/../../scripts/tri.py"`（以下 `tri`）で行う。文書を開く前に `tri context` で必要なセクションだけを取得する。
 置き場・寿命の判断に迷ったら `${CLAUDE_SKILL_DIR}/../../docs/knowledge-model.md` を読むこと。
 </tri_ssd_context>
@@ -51,7 +51,7 @@ Tri-SSD: Goal（docs/goal.md）・Docs（docs/ のあるべき状態）・Tasks�
 | `docs/l2_foundation/**` | `docs/design/**` |
 | `docs/l3_phases/PH-*.md`（フォルダ形式は1ファイルに統合） | `docs/tasks/`（`status`: planned→open, in_progress→active。done は `_done/`） |
 | `docs/l3_phases/_archive/**` | `docs/tasks/_done/**` |
-| `docs/l0_ideas/**` | `docs/notes/ideas/**` |
+| `docs/l0_ideas/**` | `docs/notes/ideas/**`（移行時に一度だけ見直し、Task・Docs にするか削除する） |
 | `<!-- TODO: 要確認 -->`・`（未確認…）` | `（未確定）`・`（未検証）` |
 
 3. 移行後の仕上げ:

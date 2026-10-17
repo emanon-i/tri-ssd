@@ -172,7 +172,24 @@ def title_of(doc) -> str:
     return doc.path
 
 
-def _append_evidence(text: str, lines_to_add: list[str]) -> str:
+def _append_evidence(text: str, lines_to_add: list[str], replace: tuple[str, ...] = ()) -> str:
+    """検証記録に追記する。replace に挙げた AC の以前の記録は消す（完了時点の判断に要るのは最新の結果だけ）。"""
+    if replace:
+        rng = _section_range(text, EVIDENCE_HEAD_RE)
+        if rng:
+            lines = text.splitlines()
+            kept, skipping = [], False
+            for i, line in enumerate(lines):
+                if rng[0] < i < rng[1]:
+                    m = re.match(r"^- \S+ \S+ (AC\d+) ", line)
+                    if m and m.group(1) in replace:
+                        skipping = True
+                        continue
+                    if skipping and line.startswith("  "):
+                        continue
+                    skipping = False
+                kept.append(line)
+            text = "\n".join(kept) + "\n"
     rng = _section_range(text, EVIDENCE_HEAD_RE)
     lines = text.splitlines()
     if not rng:
@@ -215,26 +232,6 @@ def _write(p: Project, rel: str, text: str):
         f.write(text)
 
 
-TEMPLATE = """---
-id: {id}
-status: open
-refs: [{refs}]
-code: [{code}]
-created: {date}
----
-# {id} {title}
-
-## 目的の状態
-
-{goal}
-
-## 受け入れ条件
-
-- [ ] AC1: <!-- 観測可能な振る舞い1つ -->
-  - 検証: <!-- `実行するコマンド` または 手動: 確認方法 -->
-
-## 検証記録
-"""
 
 
 def new(p: Project, title: str, refs: list[str], code: list[str], goal: str = "", slug: str | None = None) -> str:
@@ -245,8 +242,9 @@ def new(p: Project, title: str, refs: list[str], code: list[str], goal: str = ""
     slug = "-".join(words)[:40].strip("-") if any(re.search("[a-z]", w) for w in words) else ""
     rel = f"{TASKS}/{id_}{'-' + slug if slug else ''}.md"
     (p.root / TASKS).mkdir(parents=True, exist_ok=True)
-    _write(p, rel, TEMPLATE.format(id=id_, title=title, refs=", ".join(refs), code=", ".join(code), date=today(),
-                                   goal=goal or "<!-- 完了時に成立している状態。満たすべき Docs の記述（ID・リンク）を参照する -->"))
+    from .admin import template
+    _write(p, rel, template("task.md", id=id_, title=title, refs=", ".join(refs), code=", ".join(code), date=today(),
+                            goal=goal or "<!-- 完了時に成立している状態。満たすべき Docs の記述（ID・リンク）を参照する -->"))
     return rel
 
 
@@ -258,15 +256,11 @@ def _git_head(root: Path) -> str | None:
     return r.stdout.strip()[:12] if r.returncode == 0 else None
 
 
-def _mark_started(p: Project, text: str) -> str:
-    """着手時刻と着手時点のコミットを記録する（完了時に「この Task の間の変更・参照」を求める基準）。"""
+def _mark_base(p: Project, text: str) -> str:
+    """着手時点のコミットを記録する（完了ゲートが「着手後に差分のある文書」を求める基準）。"""
     fm, _ = md.parse_frontmatter(text)
-    if not fm.get("started"):
-        text = md.set_fm_value(text, "started", dt.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
-        head = _git_head(p.root)
-        if head:
-            text = md.set_fm_value(text, "base", head)
-    return text
+    head = None if fm.get("base") else _git_head(p.root)
+    return md.set_fm_value(text, "base", head) if head else text
 
 
 def set_status(p: Project, id_: str, status: str) -> str:
@@ -274,7 +268,7 @@ def set_status(p: Project, id_: str, status: str) -> str:
     if not doc:
         raise SystemExit(f"error: アクティブな Task {id_} が見つかりません")
     text = md.set_fm_value(doc.text, "status", status)
-    _write(p, doc.path, _mark_started(p, text) if status == "active" else text)
+    _write(p, doc.path, _mark_base(p, text) if status == "active" else text)
     return doc.path
 
 
@@ -328,68 +322,14 @@ def verify(p: Project, id_: str, only: list[str] | None = None, timeout: int = 9
         add += evidence_lines(stamp, ac.label, res, detail, fp)
         text = _set_check(text, ac, res == "PASS")
     if add:
-        text = _append_evidence(text, add)
+        text = _append_evidence(text, add, replace=tuple(ac.label for ac, res, _ in results if res != "MANUAL"))
     if str(doc.fm.get("status")) == "open":
         text = md.set_fm_value(text, "status", "active")
-    _write(p, doc.path, _mark_started(p, text))
+    _write(p, doc.path, _mark_base(p, text))
     return results
 
 
-def _run_all(cmds: list[str], cwd: Path, timeout: int) -> bool:
-    for cmd in cmds:
-        try:
-            if subprocess.run(cmd, shell=True, cwd=cwd, capture_output=True, text=True, timeout=timeout).returncode != 0:
-                return False
-        except subprocess.TimeoutExpired:
-            return False
-    return True
-
-
-def against_base(p: Project, id_: str, labels: list[str], timeout: int = 900) -> dict[str, str]:
-    """検証コマンドを着手時点（base）のコードで実行する。着手時点のコードでも通る検証は、変更について何も確かめていない。
-
-    base の作業ツリーを一時的に作り、検証コマンドが名指しする変更済みファイル（新しいテスト等）だけを
-    現在の内容で重ねてから実行する。結果: FAIL = 変更を確かめている / PASS = 確かめていない可能性。
-    """
-    doc = find_task(p, id_)
-    base = str(doc.fm.get("base") or "")
-    acs = [a for a in parse_acs(doc.text) if a.label in labels and a.commands]
-    if not base or not acs:
-        return {}
-    changed = changed_paths(p.root, base)
-    out: dict[str, str] = {}
-    with tempfile.TemporaryDirectory() as tmp:
-        wt = Path(tmp) / "base"
-        r = subprocess.run(["git", "worktree", "add", "--detach", "--quiet", str(wt), base],
-                           cwd=p.root, capture_output=True, text=True)
-        if r.returncode != 0:
-            return {}
-        try:
-            for ac in acs:
-                cmdline = " ".join(ac.commands)
-                for f in changed:
-                    module = f[:-3].replace("/", ".") if f.endswith(".py") else None
-                    named = f in cmdline or (module and module in cmdline) or re.search(
-                        rf"(?<![\w/.-]){re.escape(Path(f).name)}(?![\w.-])", cmdline)
-                    if named and (p.root / f).is_file():
-                        (wt / f).parent.mkdir(parents=True, exist_ok=True)
-                        shutil.copy2(p.root / f, wt / f)
-                out[ac.label] = "PASS" if _run_all(ac.commands, wt, timeout) else "FAIL"
-        finally:
-            subprocess.run(["git", "worktree", "remove", "--force", str(wt)], cwd=p.root, capture_output=True)
-    lines = []
-    stamp = now()
-    for label, res in out.items():
-        meaning = "変更を確かめている" if res == "FAIL" else "着手時点でも通る。振る舞いを変えない Task でなければ変更を確かめていない"
-        lines.append(f"- {stamp} {label} 着手時点 {res}（{meaning}）")
-    if lines:
-        doc = find_task(p, id_)
-        _write(p, doc.path, _append_evidence(doc.text, lines))
-    return out
-
-
 DECISION_HEAD_RE = re.compile(r"^判断|^decision", re.I)
-BASE_LINE_RE = re.compile(r"^- (\S+ \S+) (AC\d+) 着手時点 (PASS|FAIL)")
 
 
 def _section_text(text: str, head_re) -> str:
@@ -421,16 +361,13 @@ def report(p: Project, id_: str) -> str:
             out.append(f"- {sec.title if sec.title.startswith(r) else f'{r}: {sec.title}'}")
         out.append("")
     lt = latest(parse_evidence(text))
-    base_res = {m.group(2): m.group(3) for m in (BASE_LINE_RE.match(x) for x in text.splitlines()) if m}
     out += ["## 検証（何を・どう確かめたか）", ""]
     for ac in parse_acs(text):
         e = lt.get(ac.label)
         res = f"{e.result}（{e.when}）" if e else "未検証"
-        b = base_res.get(ac.label)
-        extra = {"FAIL": "／着手時点では落ちる＝変更を確かめている", "PASS": "／⚠️ 着手時点でも通る"}.get(b, "")
         out.append(f"- {ac.label}: {ac.text}")
         out.append(f"  - 方法: {ac.verify or '未記載'}")
-        out.append(f"  - 結果: {res}{extra}")
+        out.append(f"  - 結果: {res}")
     out.append("")
     decision = _section_text(text, DECISION_HEAD_RE)
     if decision:
@@ -459,7 +396,7 @@ def record(p: Project, id_: str, label: str, result: str, note: str) -> str:
         raise SystemExit("error: 結果は pass / fail")
     text = _set_check(doc.text, acs[label], res == "PASS")
     lines = evidence_lines(now(), label, res, f"手動: {note}", fingerprint(p.root) or "none")
-    _write(p, doc.path, _append_evidence(text, lines))
+    _write(p, doc.path, _append_evidence(text, lines, replace=(label,)))
     return "\n".join(lines)
 
 
@@ -486,7 +423,7 @@ def gate(p: Project, doc) -> list[str]:
         if d.kind not in ("goal", "doc"):
             continue
         for ln, line in md.prose_lines(d.text):
-            for m in MARKER_RE.finditer(line):
+            for m in MARKER_RE.finditer(md.strip_inline_code(line)):  # インラインコード内は例示
                 if m.group(1) == "計画" and m.group(2) == id_:
                     fails.append(f"{d.path}:{ln + 1} に（計画: {id_}）が残っています。実装済みの状態として記述を確定しマーカーを外す")
     relevant = relevant_docs(p, doc)

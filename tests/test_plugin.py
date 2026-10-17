@@ -24,7 +24,7 @@ def subcommands(parser: argparse.ArgumentParser) -> dict[str, set[str]]:
 
 class SkillTest(unittest.TestCase):
     def test_skill_set(self):
-        self.assertEqual([p.parent.name for p in SKILLS], ["docs", "note", "setup", "task"])
+        self.assertEqual([p.parent.name for p in SKILLS], ["docs", "setup", "task"])
 
     def test_frontmatter_and_size(self):
         for path in SKILLS:

@@ -1,6 +1,6 @@
 ---
-description: Tri-SSD プロジェクト（docs/goal.md がある）で開発作業を進める。作業開始時に現在位置と Task に必要な文脈だけを CLI で取得し、仕様と実装の差分を Task にし、受け入れ条件を検証証跡付きで満たして完了させる。
-when_to_use: 実装して・続きをやって・次は何をする？・T-0003 をやって・このバグを直して・この仕様を実装して・Task を作って・検証して・完了にして・作業を再開して、と言われたとき。Tri-SSD のプロジェクトでコードを変更する作業全般。英語では implement / continue / next task / fix this / close the task。文書の改訂だけなら docs、メモ・引き継ぎだけなら note、導入・移行は setup を使う。
+description: Tri-SSD プロジェクト（docs/goal.md がある）で開発作業を進める。作業開始時に現在位置と Task に必要な文脈だけを CLI で取得し、仕様と実装の差分を Task にし、受け入れ条件を検証証跡付きで満たして完了させる。作業メモと次のセッションへの引き継ぎも扱う。
+when_to_use: 実装して・続きをやって・次は何をする？・T-0003 をやって・このバグを直して・この仕様を実装して・Task を作って・検証して・完了にして・作業を再開して・メモしておいて・引き継ぎを書いて・今日はここまで、と言われたとき。Tri-SSD のプロジェクトでコードを変更する作業全般。英語では implement / continue / next task / fix this / close the task。文書の改訂だけなら docs、導入・移行は setup を使う。
 argument-hint: "[T-xxxx | 作業内容] - 対象 Task または依頼内容（省略時は現在位置から選ぶ）"
 allowed-tools: Read, Edit, Write, Glob, Grep, Bash
 ---
@@ -8,7 +8,7 @@ allowed-tools: Read, Edit, Write, Glob, Grep, Bash
 # Task を進める
 
 <tri_ssd_context>
-Tri-SSD: Goal（docs/goal.md）・Docs（docs/ のあるべき状態）・Tasks（docs/tasks/ 差分を解消する検証可能な作業）・Notes（docs/notes/・.tri-ssd/notes/ 一時情報）・CHANGELOG（意味のある変更の履歴）。
+Tri-SSD: Goal（docs/goal.md）・Docs（docs/ のあるべき状態）・Tasks（docs/tasks/ 差分を解消する検証可能な作業。作業メモも Task の中）・引き継ぎ（docs/notes/handoff.md）・CHANGELOG（意味のある変更の履歴）。常に守る規則はエージェントが常に読む指示ファイル（CLAUDE.md・AGENTS.md）に置く。
 決定的処理は CLI `python3 "${CLAUDE_SKILL_DIR}/../../scripts/tri.py"`（以下 `tri`）で行う。文書を開く前に `tri context` で必要なセクションだけを取得する。
 置き場・寿命の判断に迷ったら `${CLAUDE_SKILL_DIR}/../../docs/knowledge-model.md` を読むこと。
 </tri_ssd_context>
@@ -17,7 +17,7 @@ Tri-SSD: Goal（docs/goal.md）・Docs（docs/ のあるべき状態）・Tasks�
 - docs/ を Glob・Read で総なめしない。`tri context` の出力で足りなければ、出力が示す候補だけを読む
 - Task に書かれていない機能・「念のため」の処理を足さない
 - 差分を何でも Task にしない（下の分類表）。Task を細かく割りすぎない（1 Task = 1つの観測可能な状態変化）
-- 作業中の気づきはまず Note に書く。Docs へは検証済みで今後も真なものだけを昇格する
+- 作業中の気づきはまず Task の `## メモ` に書く。Docs へは検証済みで今後も真なものだけを移す
 </avoid_over_engineering>
 
 ## 手順
@@ -37,7 +37,7 @@ tri status      # Goal・進行中 Task と AC 進捗・引き継ぎ・検査結
 
 ```bash
 tri task start T-xxxx           # open → active
-tri context T-xxxx --emit       # Task 全文・Goal・参照先の仕様・関連ノートの本文
+tri context T-xxxx --emit       # Task 全文・Goal・参照先の仕様・引き継ぎの本文
 ```
 
 - 出力の「選定」と本文を読んで作業を始める。「予算外で省略」「関連の弱い候補」は、Task の目的に関係しそうなものだけ Read する
@@ -59,7 +59,7 @@ context に含まれなかったが作業に必要だった Docs の節やコー
 |---|---|
 | Docs が正しく、コードが未達 | Task を作り、Docs の該当記述に `（計画: T-nnnn）` を付ける |
 | Docs が誤り | docs スキルの手順で Docs を直す |
-| 設計が未確定 / 意図的に後回し / 前提が未検証 | Docs に `（未確定）` / `（保留）` / `（未検証）` を付ける。必要なら Note に判断材料を残す |
+| 設計が未確定 / 意図的に後回し / 前提が未検証 | Docs に `（未確定）` / `（保留）` / `（未検証）` を付ける。必要なら判断材料を Task の `## メモ` か引き継ぎに残す |
 
 ```bash
 tri task new "Tag search" --refs REQ-0004 docs/search.md#タグ検索 --code src/search/ --goal "完了時に成立している状態"
@@ -84,26 +84,23 @@ tri task new "タグ検索" --slug tag-search ...   # 題が日本語ならフ�
 ### 4. 実装する
 
 - 既存コードのパターンに合わせる。Docs の契約（やらないこと・性能予算）を守る
-- 実装中の発見・仮説は `tri note add "内容" --task T-xxxx` に記録する
+- 実装中の発見・仮説は Task ファイルの `## メモ` に1〜3行で書く（完了で Task と一緒に退場する。別の場所に溜めない）
 - 前提が崩れた（Docs の設計が成り立たない）ら実装を止め、Docs の見直しをユーザーに提案する
 - 「目的の状態」の一部がこの Task では実現できないと分かったら、黙って閉じない。実現できる範囲に目的の状態を書き直し、残りは新しい Task にする（Docs の該当記述には `（計画: T-nnnn）`）
-- 他の進行中 Task の範囲（同じテーブル・同じモジュール）に触れる必要があれば、最小限にとどめ、`tri note add "..." --task <相手のID>` で相手側に知らせる
+- 他の進行中 Task の範囲（同じテーブル・同じモジュール）に触れる必要があれば、最小限にとどめ、相手の Task の `## メモ` に1行書いて知らせる
 
 ### 5. Docs を実装後の状態にする
 
 - この Task で満たした記述の `（計画: T-xxxx）` を外す（外さないと完了ゲートを通らない）。マーカーが無ければ何もしない
 - `tri impact --git` で見直すべき Docs を確認し、実装と食い違う記述は docs スキルの更新プロトコルで直す
-- 検証済みで今後も真な発見（外部仕様・制約）は Note から Docs へ昇格する
+- `## メモ` のうち検証済みで今後も真な発見（外部仕様・制約）は Docs へ移す。全作業で守るべき規則になったものは指示ファイル（CLAUDE.md 等）に1行で書く
 
 ### 6. 検証する
 
 ```bash
 tri task verify T-xxxx                                  # 検証: のコマンドを実行し証跡を追記
-tri task verify T-xxxx --against-base                   # 全部通ったら一度: 着手時点のコードでも実行し、そこでは落ちるか確かめる
 tri task record T-xxxx AC2 pass --note "確認した内容"     # 手動の AC
 ```
-
-`--against-base` で「着手時点 PASS」と出た AC は、変更について何も確かめていない。振る舞いを変えない Task（リファクタ等）でなければ、検証コマンドを直す。
 
 <verification_judgment>
 PASS は「コマンドが成功した」ことしか意味しない。各 AC について、検証コマンドが AC の文言どおりの振る舞いを実際に確かめているかを確認する。
@@ -121,25 +118,24 @@ tri task close T-xxxx
 - ゲート未達の項目が表示されたら解消して再実行する。`--force "理由"` はユーザーが了承したときだけ使う
 - 利用者に見える機能の追加・修正、または仕様・設計の意味のある変更があれば `tri log Added|Changed|Fixed "何を・なぜ" --refs T-xxxx`（内部の作業経過は記録しない）
 - close が「書かれていない依存の候補」を示したら、この Task で実際に必要だったものだけを refs や仕様本文のリンクとして書き足す（次回から context に入る）
-- close が示した関連ノートを note スキルの基準で整理する（昇格・削除）
 - 完了した Task（`_done/`）は履歴。後の変更で検証コマンドが古くなっても直さない
 
 ### 8. 中断・セッション終了
 
 ```bash
-tri note handoff - <<'EOF'
+tri handoff - <<'EOF'
 - 現在位置: T-0005 の AC1 PASS、AC2 未着手
 - 次の一手: AC2（補完の並び順）
 - 未解決: use_count 列を足すかユーザー判断待ち
 EOF
 ```
 
-上書きされる（過去の引き継ぎは残らない）。複数行は `-` で標準入力から渡す。
+上書きされる（過去の引き継ぎは残らない）。複数行は `-` で標準入力から渡す。個人・環境固有の事情は `--local`（`.tri-ssd/handoff.md`。git 管理外）。
 
 ## 完了後の案内
 
-- `tri task report` の内容（何を・なぜ・どう確かめたか・判断・Goal のどこに近づいたか）。ユーザーはこれを読んで判断し、納得できないときだけコードを見る
-- 「着手時点でも通る」と出た検証が残っていれば、その理由
+- `tri task report` の内容（目的の状態・満たす仕様・何をどう確かめたか・判断・変更したファイル・CHANGELOG）。ユーザーはこれを読んで判断し、納得できないときだけコードを見る
+- この Task で Goal のどの成功状態に近づいたか（近づかなかった点も）を自分の言葉で1〜2行
 - 次の候補（`tri status` の進行中 Task、または `tri gaps` の差分）
 
 ## エラーケース
