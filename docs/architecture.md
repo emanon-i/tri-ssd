@@ -23,7 +23,7 @@ flowchart LR
 | 要素 | 責務 | 実装 |
 |---|---|---|
 | Skills | エージェントへの手順（いつ・どのコマンドを使い・何を判断するか） | `skills/` |
-| CLI | 決定的処理の入口。Python 3.10+ の標準ライブラリのみ（REQ-0009） | `scripts/tri.py` |
+| CLI | 決定的処理の入口。Python 3.9+ の標準ライブラリのみ（REQ-0009） | `scripts/tri.py` |
 | 知識グラフ | 文書の分類・セクション・ID 定義・エッジを毎回元データから導出する。索引ファイル・キャッシュは持たない | `scripts/trissd/project.py` |
 | Markdown 解析 | frontmatter・見出し・ID・リンク・コードパス・トークン推定 | `scripts/trissd/md.py` |
 | Hooks | セッション開始時の状況注入と、Docs 編集直後の検査 | `hooks/hooks.json` |

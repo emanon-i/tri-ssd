@@ -47,7 +47,7 @@ tests/           # unittest・長期運用シミュレーション・コンテ�
 ## 開発時の注意
 
 - **テスト**: `python3 -m unittest discover -s tests -p "test_*.py"`（Skill から参照する CLI コマンドの実在も検査される）
-- **外部依存を足さない**: CLI は Python 3.10+ の標準ライブラリのみ
+- **外部依存を足さない**: CLI は Python 3.9+ の標準ライブラリのみ（CI は 3.9 と 3.13）
 - **ID は CLI で採番**: `python3 scripts/tri.py id REQ` / `task new`（自前で採番しない）
 - **変更時はバージョン更新を忘れない**: `CHANGELOG.md`、`.claude-plugin/plugin.json`、`.claude-plugin/marketplace.json` のバージョンを同期
 - **評価表の更新**: 取得ロジックを変えたら `python3 tests/eval_context.py --write` で docs/evaluation.md を更新する
