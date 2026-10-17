@@ -1,6 +1,6 @@
 ---
 description: Tri-SSD プロジェクト（docs/goal.md がある）で開発作業を進める。作業開始時に現在位置と Task に必要な文脈だけを CLI で取得し、仕様と実装の差分を Task にし、受け入れ条件を検証証跡付きで満たして完了させる。作業メモと次のセッションへの引き継ぎも扱う。
-when_to_use: 実装して・続きをやって・次は何をする？・T-0003 をやって・このバグを直して・この仕様を実装して・Task を作って・検証して・完了にして・作業を再開して・メモしておいて・引き継ぎを書いて・今日はここまで、と言われたとき。Tri-SSD のプロジェクトでコードを変更する作業全般。英語では implement / continue / next task / fix this / close the task。文書の改訂だけなら docs、導入・移行は setup を使う。
+when_to_use: 実装して・続きをやって・次は何をする？・T-0003 をやって・このバグを直して・この仕様を実装して・Task を作って・検証して・完了にして・作業を再開して・メモしておいて・引き継ぎを書いて・今日はここまで、と言われたとき。Tri-SSD のプロジェクトでコードを変更する作業全般。英語では implement / continue / next task / fix this / close the task。文書の改訂だけなら docs、導入・移行は setup を使う。docs/goal.md の無いリポジトリでの作業には使わない。
 argument-hint: "[T-xxxx | 作業内容] - 対象 Task または依頼内容（省略時は現在位置から選ぶ）"
 allowed-tools: Read, Edit, Write, Glob, Grep, Bash
 ---
