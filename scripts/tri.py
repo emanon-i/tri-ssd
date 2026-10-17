@@ -274,7 +274,7 @@ def cmd_task(a):
     if a.tcmd == "list":
         fp = tasks.fingerprint(p.root)
         for d in sorted(p.task_docs(a.all), key=lambda d: str(d.fm.get("id"))):
-            ok, n, stale = tasks.progress(d, fp)
+            ok, n, stale = tasks.progress(d, None if d.kind == "task_done" else fp)  # 完了 Task は履歴。失効を数えない
             print(f"{d.fm.get('id')}  [{d.fm.get('status')}]  AC {ok}/{n}{f' stale {stale}' if stale else ''}  "
                   f"{tasks.title_of(d)}  ({d.path})")
         return 0
