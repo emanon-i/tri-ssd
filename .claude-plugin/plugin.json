@@ -1,7 +1,7 @@
 {
   "name": "tri-ssd",
-  "version": "5.0.0",
-  "description": "Tri-SSD (Tri-Layer Slice Spec Driven) - 要件→設計→フェーズの三層で仕様を管理する仕様駆動フレームワーク",
+  "version": "6.0.0",
+  "description": "Tri-SSD - AI エージェントの長期開発のための知識ライフサイクル管理とコンテキスト最適化のハーネス",
   "author": {
     "name": "emanon-i"
   },

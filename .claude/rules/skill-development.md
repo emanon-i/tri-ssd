@@ -29,28 +29,19 @@ allowed-tools: Read, Write, Edit, Glob, Grep  # 事前承認するツールの�
 
 ## 共通コンテキストブロック
 
-すべてのスキルに含める（規定文面のまま。これ以上増やさない）:
+すべてのスキルに含める（規定文面のまま。`tests/test_plugin.py` が全スキルでの一致を検査する）:
 
 ```markdown
 <tri_ssd_context>
-Tri-SSD: L0(任意メモ docs/l0_ideas/) → L1(要件 docs/l1_requirements/vision.md) → L2(構成 docs/l2_foundation/foundation.md) → L3(フェーズ docs/l3_phases/PH-xxxx.md)。
-ID形式: PREFIX-nnnn（REQ, PH, F）。番号は再利用しない（永久欠番）。
-配置・分割・粒度の判断に迷ったら `${CLAUDE_SKILL_DIR}/../../docs/layer-rules.md` を読むこと。
+Tri-SSD: Goal（docs/goal.md）・Docs（docs/ のあるべき状態）・Tasks（docs/tasks/ 差分を解消する検証可能な作業。作業メモも Task の中）・引き継ぎ（docs/notes/handoff.md）・CHANGELOG（意味のある変更の履歴）。常に守る規則はエージェントが常に読む指示ファイル（CLAUDE.md・AGENTS.md）に置く。
+決定的処理は CLI `python3 "${CLAUDE_SKILL_DIR}/../../scripts/tri.py"`（以下 `tri`）で行う。文書を開く前に `tri context` で必要なセクションだけを取得する。
+置き場・寿命の判断に迷ったら `${CLAUDE_SKILL_DIR}/../../docs/knowledge-model.md` を読むこと。
 </tri_ssd_context>
 ```
 
-レイヤーの詳細説明を各スキルに複製しない。正は `docs/layer-rules.md`。
+置き場・寿命の詳細を各スキルに複製しない。正は `docs/knowledge-model.md`。
 
-`<avoid_over_engineering>` ブロック（スキルごとに内容調整可）も含める:
-
-```markdown
-<avoid_over_engineering>
-- 必要以上に詳細を聞き出さない
-- 「わからない」→ TODOマークして先に進む
-- テンプレートの全セクションを埋める必要はない
-- 「念のため」でセクションを追加しない
-</avoid_over_engineering>
-```
+`<avoid_over_engineering>` ブロック（スキルごとに内容調整可）も含める。
 
 ## 段階的開示
 
@@ -60,12 +51,12 @@ ID形式: PREFIX-nnnn（REQ, PH, F）。番号は再利用しない（永久欠�
 | 参照の深さ | 1階層まで（SKILL.md → references/*.md は可、その先の多段参照は不可） |
 
 - 定型テンプレートや長い出力例は `references/` に外出しし、必要時のみ読む
-- 決定的処理（採番・変換・移動）は `scripts/*.py` に切り出す。共有ロジックはプラグインルート `scripts/` に置き、`${CLAUDE_SKILL_DIR}/../../scripts/` で参照する
+- 決定的処理（採番・解析・検査・移動）は CLI（`scripts/tri.py` のサブコマンド）に実装し、スキルからは `tri <command>` で呼ぶ。スキルが使うサブコマンドは `tests/test_plugin.py` が実在を検査する
 
 ## 必須セクション
 
 1. **出力フォーマット定義** — YAMLフロントマター形式・必須Markdown構造・省略可能なセクション
-2. **ID採番**（ID生成を行う場合）— `${CLAUDE_SKILL_DIR}/../../scripts/next_id.py` を実行（自前で採番ロジックを書かない）
+2. **ID採番**（ID生成を行う場合）— `tri id <PREFIX>` / `tri task new` を使う（自前で採番ロジックを書かない）
 3. **完了後の案内** — 作成ファイルのパス・TODO箇所の数・次のスキル
 
 ## 単一責任

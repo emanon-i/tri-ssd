@@ -4,6 +4,49 @@ Tri-SSD (Tri-Layer Slice Spec Driven) フレームワークの変更履歴です
 
 形式は [Keep a Changelog](https://keepachangelog.com/ja/1.1.0/) に準拠しています。
 
+## [Unreleased]
+
+## [6.0.0] - 2026-10-16
+
+知識ライフサイクル管理とコンテキスト最適化のハーネスへ再設計（破壊的変更）。判断の背景は docs/adr/0001-knowledge-harness.md と docs/adr/0002-places-with-lifetimes.md。
+
+### Added
+
+- **知識モデル**: Goal・Docs・Tasks（作業メモを含む）・引き継ぎ・CHANGELOG・常に守る規則（エージェントの指示ファイル）の置き場を更新契機と寿命で定義（docs/knowledge-model.md）。溜まり続ける置き場を作らない。Docs の差分マーカー `（計画: T-nnnn）`・`（保留）`・`（未確定）`・`（未検証）`
+- **CLI `scripts/tri.py`**（標準ライブラリのみ）: `init`・`status`・`context`・`impact`・`check`・`gaps`・`task`・`handoff`・`log`・`id`・`migrate`
+- **Context Resolver**（`context`）: Task・ID・見出し・コードパスを起点に、読むべきセクションだけを知識グラフから選定。選定理由・トークン予算・必須情報の省略の明示・依存が無い起点の語彙探索・関連の弱い候補の列挙
+- **変更影響の逆引き**（`impact`）: コード・文書の変更（`--git` は差分の行範囲）から見直すべき Docs と関係する進行中 Task
+- **検査**（`check`）: 参照切れ（ID・リンク・見出しアンカー・frontmatter）・ID 重複・履歴汚染の疑い（日英の言い回し・日付行・取り消し線）・重複記述・肥大化・完了済み Task を指す計画マーカー・Task 書式。`--changed` で CHANGELOG の記録漏れ・追記偏重・CHANGELOG の書き換え
+- **Task と完了ゲート**: AC ごとの検証コマンド実行と証跡記録（`task verify`・`task record`。AC の状態は検証記録だけが持ち、AC ごとに最新の結果だけを残す）、作業ツリー指紋による古い証跡の検出、`task close` のゲート（関係する文書の誤りだけで止める）
+- **報告**（`task report`）: 目的・満たす仕様・検証・作業メモ・判断・変更・CHANGELOG を既存の記録から組み立てる。人間はコードの代わりにこれを読む
+- **引き継ぎ**（`handoff`）: 上書きで1つ。個人用は git 管理外の `.tri-ssd/`
+- **テンプレート**（`templates/`）: Goal・Task・CHANGELOG の雛形
+- **フック**: SessionStart で現在位置を注入、PostToolUse で編集した Docs の検査結果を返す。Python が無い環境では何もしない
+- **旧構成からの移行**（`migrate`。既定はドライラン）
+- 自動テスト（unittest）・長期運用シミュレーション（`tests/simulate.py`）・コンテキスト効率の実測（`tests/eval_context.py`、docs/evaluation.md）
+
+### Changed
+
+- Skill を 12 から 3 に統合: `setup`・`task`・`docs`
+- 記載規約を「現在形で書く・追記せず置き換える・経緯は CHANGELOG/ADR」中心に改訂（docs/writing-rules.md）
+- このリポジトリ自身を Tri-SSD で管理（docs/goal.md・docs/requirements.md・docs/architecture.md・docs/tasks/）
+
+### Removed
+
+- Skill: `init-tri-ssd`・`gen-l1`・`gen-l2`・`gen-l3`・`gen-interface`・`gen-data`・`gen-doc`・`gen-code`・`reshape-l3`・`archive-l3`・`review-tri-ssd`・`next-tri-ssd`
+- スクリプト: `doc_graph.py`・`validate_ids.py`・`next_id.py`（CLI に統合）・`archive.py`・`init.py`・`split.py`・`merge.py`
+- docs/layer-rules.md（docs/knowledge-model.md に置換）・docs/README.md（在り処マップ。README と `status` に統合）
+
+### Migration（v5 からの移行）
+
+| 旧 | 新 |
+|----|----|
+| `docs/l1_requirements/vision.md` | `docs/goal.md`（`tri migrate --apply`） |
+| `docs/l2_foundation/**` | `docs/design/**` |
+| `docs/l3_phases/PH-*` | `docs/tasks/`（PH・F の ID は有効） |
+| `/gen-*`・`/archive-l3` 等 | task・docs・setup スキル（README の対応表） |
+| AC 行のチェック欄 `- [ ] AC1:` | 不要（読めるが状態としては扱わない。`task verify` が外す） |
+
 ## [5.0.0] - 2026-07-03
 
 ### Added
