@@ -8,7 +8,7 @@ from trissd import tasks
 def task_text(id_, cmd1="true", cmd2="手動: 画面で確認", refs="REQ-0005"):
     return (f"---\nid: {id_}\nstatus: open\nrefs: [{refs}]\ncode: [src/api/import.py]\n---\n# {id_} 取り込み\n\n"
             "## 目的の状態\n\nREQ-0005 を満たす。\n\n## 受け入れ条件\n\n"
-            f"- [ ] AC1: 取り込める\n  - 検証: `{cmd1}`\n- [ ] AC2: 表示される\n  - 検証: {cmd2}\n\n## 検証記録\n")
+            f"- AC1: 取り込める\n  - 検証: `{cmd1}`\n- AC2: 表示される\n  - 検証: {cmd2}\n\n## 検証記録\n")
 
 
 class GateScopeTest(ProjectCase):
@@ -56,10 +56,26 @@ class ReportTest(ProjectCase):
                      "結果: PASS", "## 判断（なぜこの方法か）", "トリガー方式は", "- src/worker/trash.py",
                      "- ゴミ箱の自動削除（T-0007）"):
             self.assertIn(part, out)
+        self.assertNotIn("## メモ", out)
+
         self.tri("task", "close", "T-0007")
         done = self.tri("task", "report", "T-0007")[1]
         self.assertIn("（done・", done)
         self.assertNotIn("## 変更したファイル", done)
+
+
+    def test_report_shows_memo_and_other_task_files(self):
+        self.tri("task", "start", "T-0005")
+        self.edit("docs/tasks/T-0006-import.md", "## 検証記録", "## メモ\n\n- T-0005 が tags 表を触る\n\n## 検証記録")
+        out = self.tri("task", "report", "T-0005")[1]
+        self.assertIn("## メモ（作業中の発見）", out)
+        self.assertIn("tags.use_count", out)
+        self.assertIn("- docs/tasks/T-0006-import.md", out)
+        self.assertNotIn("- docs/tasks/T-0005-tag-search.md", out)
+
+    def test_start_reports_unchanged_status(self):
+        self.assertIn("既に active", self.tri("task", "start", "T-0005")[1])
+        self.assertIn("open → active", self.tri("task", "start", "T-0007")[1])
 
 
 class TaskTest(ProjectCase):
@@ -69,6 +85,8 @@ class TaskTest(ProjectCase):
         self.assertIn("docs/tasks/T-0008-export-json.md", out)
         text = self.read("docs/tasks/T-0008-export-json.md")
         self.assertIn("refs: [REQ-0006]", text)
+        self.assertIn("- AC1: ", text)
+        self.assertNotIn("[ ]", text)  # AC の状態は検証記録だけが持つ
         # CHANGELOG にだけ残る番号も再利用しない
         self.edit("CHANGELOG.md", "- 全文検索（T-0003）", "- 全文検索（T-0003）\n- 中止（T-0020）")
         self.assertEqual(self.tri("id", "T")[1].strip(), "T-0021")
@@ -79,20 +97,25 @@ class TaskTest(ProjectCase):
         self.tri("task", "new", "保持期間", "--slug", "trash retention")
         self.assertTrue((self.root / "docs/tasks/T-0009-trash-retention.md").exists())
 
+    def test_title_with_section_word(self):
+        text = task_text("T-0010", "true").replace("# T-0010", "# T-0010 検証記録と受け入れ条件の整理", 1)
+        self.assertEqual([a.label for a in tasks.parse_acs(text)], ["AC1", "AC2"])
+
     def test_parse_acs(self):
         acs = tasks.parse_acs(task_text("T-0010", "python3 -m unittest x", "手動: 見る"))
         self.assertEqual([a.label for a in acs], ["AC1", "AC2"])
         self.assertEqual(acs[0].commands, ["python3 -m unittest x"])
         self.assertTrue(acs[1].manual)
 
-    def test_verify_records_evidence_and_ticks(self):
+    def test_verify_records_evidence(self):
         self.write("docs/tasks/T-0010-x.md", task_text("T-0010", "echo ok"))
         code, out = self.tri("task", "verify", "T-0010")
         self.assertEqual(code, 0)
         self.assertIn("AC1 PASS", out)
         self.assertIn("手動確認が必要: AC2", out)
         text = self.read("docs/tasks/T-0010-x.md")
-        self.assertIn("- [x] AC1", text)
+        self.assertIn("- AC1: 取り込める", text)
+        self.assertNotIn("[x]", text)
         self.assertIn("status: active", text)
         ev = tasks.parse_evidence(text)
         self.assertEqual((ev[0].label, ev[0].result), ("AC1", "PASS"))
@@ -125,12 +148,14 @@ class TaskTest(ProjectCase):
             self.assertIn(head, text)
         self.assertIn("refs: [REQ-0006]", text)
 
-    def test_verify_failure_unticks(self):
-        self.write("docs/tasks/T-0010-x.md", task_text("T-0010", "exit 3").replace("- [ ] AC1", "- [x] AC1"))
+    def test_legacy_checkbox_is_read_and_dropped(self):
+        # 旧形式のチェック欄は状態を持たない。[x] でも検証記録が FAIL なら FAIL
+        self.write("docs/tasks/T-0010-x.md", task_text("T-0010", "exit 3").replace("- AC1", "- [x] AC1"))
+        self.assertEqual(tasks.parse_acs(self.read("docs/tasks/T-0010-x.md"))[0].label, "AC1")
         code, out = self.tri("task", "verify", "T-0010")
         self.assertEqual(code, 1)
         self.assertIn("AC1 FAIL", out)
-        self.assertIn("- [ ] AC1", self.read("docs/tasks/T-0010-x.md"))
+        self.assertIn("- AC1: 取り込める", self.read("docs/tasks/T-0010-x.md"))
 
     def test_gate_requires_every_ac(self):
         self.write("docs/tasks/T-0010-x.md", task_text("T-0010"))

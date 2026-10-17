@@ -261,7 +261,10 @@ def cmd_task(a):
         st = "active" if a.tcmd == "start" else a.state
         if st not in ("open", "active", "blocked"):
             raise SystemExit("error: status は open / active / blocked（完了は close、中止は drop）")
-        print(f"{a.id}: status → {st}（{tasks.set_status(p, a.id, st)}）")
+        cur = tasks.find_task(p, a.id)
+        was = str(cur.fm.get("status")) if cur else None
+        path = tasks.set_status(p, a.id, st)
+        print(f"{a.id}: 既に {st}（{path}）" if was == st else f"{a.id}: status {was} → {st}（{path}）")
         others = [str(d.fm.get("id")) for d in p.task_docs() if d.fm.get("status") == "active" and d.fm.get("id") != a.id]
         if st == "active" and others:
             print(f"⚠️  他にも active の Task があります: {', '.join(others)}（並行が意図どおりでなければ task status <ID> open|blocked）")

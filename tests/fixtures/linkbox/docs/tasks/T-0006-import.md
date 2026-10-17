@@ -13,9 +13,9 @@ api.md「POST /import」のとおり、Netscape Bookmark File を非同期に取
 
 ## 受け入れ条件
 
-- [ ] AC1: フォルダ階層がタグに変換される
+- AC1: フォルダ階層がタグに変換される
   - 検証: `python3 -m unittest tests.test_import`
-- [ ] AC2: 重複 URL は取り込まれずレポートに件数が出る
+- AC2: 重複 URL は取り込まれずレポートに件数が出る
   - 検証: `python3 -m unittest tests.test_import`
 
 ## 検証記録

@@ -109,7 +109,7 @@ class ContextTest(ProjectCase):
 
     def test_keyword_fallback_for_unlinked_task(self):
         self.write("docs/tasks/T-0008-x.md", "---\nid: T-0008\nstatus: open\n---\n# T-0008 リンク切れ確認の再試行\n\n"
-                   "## 受け入れ条件\n\n- [ ] AC1: 3 回連続失敗でリンク切れになる\n  - 検証: `true`\n")
+                   "## 受け入れ条件\n\n- AC1: 3 回連続失敗でリンク切れになる\n  - 検証: `true`\n")
         r = resolve.context(self.project(), ["T-0008"])
         self.assertTrue(any("キーワード" in w for w in r.warnings))
         self.assertIn("docs/operations.md#リンク確認", self.keys(r))

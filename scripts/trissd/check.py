@@ -71,7 +71,7 @@ def refs(p: Project) -> list[Issue]:
         doc = p.doc_of(e.src)
         if doc.kind in ("task_done", "changelog"):
             continue  # 履歴は書かれた時点の参照を保持する
-        if doc.kind == "task" and EVIDENCE_HEAD_RE.search(p.sections[e.src].title):
+        if doc.kind == "task" and p.sections[e.src].level >= 2 and EVIDENCE_HEAD_RE.search(p.sections[e.src].title):
             continue  # 検証記録も履歴
         if e.dst.startswith("code:"):
             if e.line == 0 and not p.glob(e.dst[5:]):
@@ -86,7 +86,9 @@ def refs(p: Project) -> list[Issue]:
         else:
             path, _, anchor = e.dst.partition("#")
             what = f"見出し #{anchor}" if path in p.docs else "ファイル"
-            out.append(Issue(level, "broken-link", doc.path, e.line, f"リンク先の{what}がありません: {e.dst}"))
+            near = [s.slug for s in p.docs[path].sections if s.slug.lower() == md.slugify(anchor)] if path in p.docs else []
+            hint = f"（#{near[0]} のこと? 見出しのアンカーは小文字・記号除去）" if near else ""
+            out.append(Issue(level, "broken-link", doc.path, e.line, f"リンク先の{what}がありません: {e.dst}{hint}"))
     # 実在しないコードパスの疑い（先頭ディレクトリは実在するのに全体が無い）
     for doc in p.docs.values():
         if doc.kind not in ("goal", "doc"):
@@ -224,7 +226,7 @@ def tasks(p: Project) -> list[Issue]:
         if doc.kind == "task" and st in ("done", "dropped"):
             out.append(Issue("warn", "task", doc.path, 0, f"status: {st} なのに未アーカイブ（task close で検証・移動）"))
         if doc.kind == "task" and st in ("open", "active") and not parse_acs(doc.text):
-            out.append(Issue("warn", "task", doc.path, 0, "受け入れ条件（- [ ] AC1: ...）がありません"))
+            out.append(Issue("warn", "task", doc.path, 0, "受け入れ条件（- AC1: ...）がありません"))
     return out
 
 

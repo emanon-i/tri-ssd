@@ -22,7 +22,8 @@ from .project import DONE, MARKER_RE, TASKS, Project
 
 AC_HEAD_RE = re.compile(r"受け入れ条件|acceptance", re.I)
 EVIDENCE_HEAD_RE = re.compile(r"検証記録|evidence", re.I)
-CHECK_RE = re.compile(r"^(\s{0,1})[-*] \[( |x|X)\] (.*)$")
+# AC の行: `- AC1: 振る舞い`。旧形式のチェック欄付き `- [ ] ...` も読む（状態は検証記録だけが持つ）
+CHECK_RE = re.compile(r"^(\s{0,1})[-*] (?:\[( |x|X)\] (.*)|(AC\d+\s*[:：].*))$")
 LABEL_RE = re.compile(r"^(AC\d+)\s*[:：.]?\s*")
 VERIFY_RE = re.compile(r"^\s+[-*]\s*(?:検証|verify)\s*[:：]\s*(.*)$", re.I)
 EVIDENCE_RE = re.compile(
@@ -34,7 +35,6 @@ CMD_RE = re.compile(r"`([^`]+)`")
 class AC:
     label: str
     line: int                  # 0始まり
-    checked: bool
     text: str
     verify: str | None = None
     commands: list[str] = field(default_factory=list)
@@ -72,7 +72,7 @@ def today() -> str:
 def _section_range(text: str, head_re) -> tuple[int, int] | None:
     secs = md.split_sections("", text, md.parse_frontmatter(text)[1])
     for s in secs[1:]:
-        if head_re.search(s.title):
+        if s.level >= 2 and head_re.search(s.title):  # 1 は Task の題（題に「検証記録」等が入っても節と見なさない）
             return s.start, s.subtree_end
     return None
 
@@ -92,10 +92,10 @@ def parse_acs(text: str) -> list[AC]:
         m = CHECK_RE.match(lines[i])
         if not m:
             continue
-        body = m.group(3)
+        body = m.group(3) if m.group(3) is not None else m.group(4)
         lm = LABEL_RE.match(body)
         label = lm.group(1) if lm else f"AC{len(acs) + 1}"
-        ac = AC(label, i, m.group(2) != " ", body[lm.end():] if lm else body)
+        ac = AC(label, i, body[lm.end():] if lm else body)
         for j in range(i + 1, min(i + 6, end)):
             vm = VERIFY_RE.match(lines[j])
             if vm:
@@ -221,9 +221,10 @@ def evidence_lines(stamp: str, label: str, result: str, detail: str, tree: str) 
     return lines
 
 
-def _set_check(text: str, ac: AC, checked: bool) -> str:
+def _drop_check(text: str, ac: AC) -> str:
+    """旧形式のチェック欄を外す。AC の状態は検証記録だけが持つ（同じ状態を2か所に持たない）。"""
     lines = text.splitlines()
-    lines[ac.line] = re.sub(r"\[( |x|X)\]", "[x]" if checked else "[ ]", lines[ac.line], count=1)
+    lines[ac.line] = re.sub(r"^(\s?[-*] )\[( |x|X)\] ", r"\1", lines[ac.line], count=1)
     return "\n".join(lines) + "\n"
 
 
@@ -293,7 +294,7 @@ def verify(p: Project, id_: str, only: list[str] | None = None, timeout: int = 9
     text = doc.text
     acs = [a for a in parse_acs(text) if not only or a.label in only]
     if not acs:
-        raise SystemExit(f"error: {id_} に受け入れ条件がありません（- [ ] AC1: ... と - 検証: `cmd`）")
+        raise SystemExit(f"error: {id_} に受け入れ条件がありません（- AC1: ... と - 検証: `cmd`）")
     results = []
     for ac in acs:
         if ac.manual:
@@ -320,7 +321,7 @@ def verify(p: Project, id_: str, only: list[str] | None = None, timeout: int = 9
         if res == "MANUAL":
             continue
         add += evidence_lines(stamp, ac.label, res, detail, fp)
-        text = _set_check(text, ac, res == "PASS")
+        text = _drop_check(text, ac)
     if add:
         text = _append_evidence(text, add, replace=tuple(ac.label for ac, res, _ in results if res != "MANUAL"))
     if str(doc.fm.get("status")) == "open":
@@ -369,6 +370,9 @@ def report(p: Project, id_: str) -> str:
         out.append(f"  - 方法: {ac.verify or '未記載'}")
         out.append(f"  - 結果: {res}")
     out.append("")
+    memo = _section_text(text, re.compile("^メモ"))
+    if memo:
+        out += ["## メモ（作業中の発見）", "", memo, ""]
     decision = _section_text(text, DECISION_HEAD_RE)
     if decision:
         out += ["## 判断（なぜこの方法か）", "", decision, ""]
@@ -376,7 +380,7 @@ def report(p: Project, id_: str) -> str:
         changed = changed_paths(p.root, str(doc.fm.get("base") or "") or None)
         if changed:
             out += [f"## 変更したファイル（着手時点 {doc.fm.get('base')} からの差分）", ""]
-            out += [f"- {c}" for c in changed if not c.startswith("docs/tasks/")]
+            out += [f"- {c}" for c in changed if c != doc.path]
             out.append("")
     cl = p.docs.get("CHANGELOG.md")
     logged = [x.strip() for x in (cl.text.splitlines() if cl else []) if id_ in x and x.strip().startswith("-")]
@@ -394,7 +398,7 @@ def record(p: Project, id_: str, label: str, result: str, note: str) -> str:
     res = result.upper()
     if res not in ("PASS", "FAIL"):
         raise SystemExit("error: 結果は pass / fail")
-    text = _set_check(doc.text, acs[label], res == "PASS")
+    text = _drop_check(doc.text, acs[label])
     lines = evidence_lines(now(), label, res, f"手動: {note}", fingerprint(p.root) or "none")
     _write(p, doc.path, _append_evidence(text, lines, replace=(label,)))
     return "\n".join(lines)

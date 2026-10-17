@@ -27,6 +27,12 @@ class CheckTest(ProjectCase):
         self.assertFalse(any("REQ-0405" in m for m in msgs))
         self.assertTrue(all(i.level == "error" for i in issues if i.path == "docs/x.md"))
 
+    def test_broken_anchor_suggests_slug(self):
+        self.write("docs/y.md", "# Y\n\n## Tag Search\n\n本文。\n")
+        self.write("docs/x.md", "# X\n\n[タグ](y.md#Tag-Search)\n")
+        msgs = [i.msg for i in self.run_check() if i.path == "docs/x.md"]
+        self.assertTrue(any("#tag-search のこと?" in m for m in msgs), msgs)
+
     def test_evidence_is_history(self):
         self.edit("docs/tasks/T-0005-tag-search.md", "## 検証記録\n", "## 検証記録\n\n- 2026-10-01 10:00 AC2 PASS 手動: 別プロジェクトの T-0999 と同じ手順 tree=none\n")
         self.assertEqual(self.run_check(), [])
