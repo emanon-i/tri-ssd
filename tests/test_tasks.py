@@ -60,6 +60,83 @@ class DiscoverTest(ProjectCase):
         self.assertNotIn("書かれていない依存の候補", out)
 
 
+class GateScopeTest(ProjectCase):
+    """ゲートを検問にしない: 無関係な誤りでは止めず、手で確かめた記録はコード変更で失効させない。"""
+
+    def setUp(self):
+        super().setUp()
+        self.write("docs/unrelated.md", "# U\n\nREQ-0405 を参照する。\n")  # 着手前からある無関係な誤り
+        git(self.root, "add", "-A")
+        git(self.root, "commit", "-qm", "pre-existing")
+        self.write("docs/tasks/T-0010-x.md", task_text("T-0010"))
+        self.tri("task", "start", "T-0010")
+        self.tri("task", "verify", "T-0010")
+        self.tri("task", "record", "T-0010", "AC2", "pass", "--note", "画面で確認")
+
+    def test_unrelated_error_does_not_block(self):
+        self.assertEqual(self.tri("check")[0], 1)
+        code, out = self.tri("task", "close", "T-0010")
+        self.assertEqual(code, 0, out)
+
+    def test_error_in_referenced_or_changed_doc_blocks(self):
+        self.edit("docs/requirements.md", "## REQ-0005 インポート\n", "## REQ-0005 インポート\n\nREQ-0404 に従う。\n")
+        code, out = self.tri("task", "close", "T-0010")
+        self.assertEqual(code, 1)
+        self.assertIn("REQ-0404", out)
+
+    def test_manual_evidence_survives_code_change(self):
+        self.write("src/api/import.py", "def import_html(data):\n    return []\n")
+        code, out = self.tri("task", "close", "T-0010")
+        self.assertEqual(code, 1)
+        self.assertIn("AC1: 検証後にコードが変更", out)
+        self.assertNotIn("AC2:", out)
+
+
+class AgainstBaseTest(ProjectCase):
+    """意味のない検証の検出: 着手時点のコードでも通る検証は、変更を確かめていない。"""
+
+    def setUp(self):
+        super().setUp()
+        self.tri("task", "start", "T-0007")
+        self.edit("docs/tasks/T-0007-trash-purge.md", "- [ ] AC1: 30 日経過分だけが削除され、29 日目のものは残る\n  - 検証: `python3 -m unittest tests.test_trash`",
+                  "- [ ] AC1: 30 日経過分だけが削除され、29 日目のものは残る\n  - 検証: `python3 -m unittest tests.test_trash`\n"
+                  "- [ ] AC2: 定期ジョブが存在する\n  - 検証: `test -f src/worker/trash.py`")
+        self.write("src/worker/trash.py", "def purge_trash(days):\n    return [d for d in days if d < 30]\n")
+        self.write("tests/test_trash.py", "import unittest\nfrom src.worker.trash import purge_trash\n\n"
+                   "class T(unittest.TestCase):\n    def test_boundary(self):\n"
+                   "        self.assertEqual(purge_trash([29, 30, 31]), [29])\n")
+
+    def test_real_check_fails_before_and_vacuous_check_passes(self):
+        code, out = self.tri("task", "verify", "T-0007", "--against-base")
+        self.assertEqual(code, 0, out)
+        self.assertIn("AC1 着手時点 FAIL", out)
+        self.assertIn("AC2 着手時点 PASS", out)
+        self.assertNotIn("worktree", git(self.root, "status", "--porcelain"))
+        rep = self.tri("task", "report", "T-0007")[1]
+        self.assertIn("着手時点では落ちる＝変更を確かめている", rep)
+        self.assertIn("⚠️ 着手時点でも通る", rep)
+        self.assertEqual(self.tri("task", "close", "T-0007")[0], 0)  # 警告であってゲートではない
+
+
+class ReportTest(ProjectCase):
+    def test_report_from_existing_records(self):
+        self.tri("task", "start", "T-0007")
+        self.edit("docs/tasks/T-0007-trash-purge.md", "`python3 -m unittest tests.test_trash`", "`true`")
+        self.edit("docs/tasks/T-0007-trash-purge.md", "## 検証記録", "## 判断\n\n日次ジョブで消す。トリガー方式は件数が少なく不要と判断。\n\n## 検証記録")
+        self.write("src/worker/trash.py", "def purge_trash():\n    return 0\n")
+        self.tri("task", "verify", "T-0007")
+        self.tri("log", "Added", "ゴミ箱の自動削除", "--refs", "T-0007")
+        out = self.tri("task", "report", "T-0007")[1]
+        for part in ("## 目的の状態", "REQ-0011 削除とゴミ箱 — 削除したブックマークは", "- AC1: 30 日経過分だけ",
+                     "結果: PASS", "## 判断（なぜこの方法か）", "トリガー方式は", "- src/worker/trash.py",
+                     "- ゴミ箱の自動削除（T-0007）"):
+            self.assertIn(part, out)
+        self.tri("task", "close", "T-0007")
+        done = self.tri("task", "report", "T-0007")[1]
+        self.assertIn("（done・", done)
+        self.assertNotIn("## 変更したファイル", done)
+
+
 class TaskTest(ProjectCase):
     def test_new_numbering_is_permanent(self):
         code, out = self.tri("task", "new", "Export JSON", "--refs", "REQ-0006", "--code", "src/api/")

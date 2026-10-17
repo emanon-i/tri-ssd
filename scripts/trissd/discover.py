@@ -8,12 +8,11 @@ from __future__ import annotations
 import datetime as dt
 import json
 import re
-import subprocess
 from pathlib import Path
 
 from . import resolve
 from .project import LOCAL, Project
-from .tasks import is_artifact
+from .tasks import changed_paths
 
 READS = f"{LOCAL}/reads.log"
 DOC_PATH_RE = re.compile(r"(?<![\w/.-])((?:\./)?docs/[\w./-]+\.md)")
@@ -52,15 +51,7 @@ def track(root: Path, payload: dict) -> int:
 
 
 def _changed_since(root: Path, base: str | None) -> list[str]:
-    if not base:
-        return []
-    out = []
-    for args in (["diff", "--name-only", base, "--"], ["ls-files", "-o", "--exclude-standard"]):
-        r = subprocess.run(["git", *args], cwd=root, capture_output=True, text=True)
-        if r.returncode == 0:
-            out += [x for x in r.stdout.splitlines() if x]
-    return sorted({x for x in out if not x.startswith(("docs/", LOCAL + "/")) and x != "CHANGELOG.md"
-                   and not is_artifact(x)})
+    return [x for x in changed_paths(root, base) if not x.startswith("docs/") and x != "CHANGELOG.md"]
 
 
 def _reads_since(root: Path, started: str) -> list[tuple[str, int | None, int | None]]:

@@ -56,7 +56,7 @@ Docs は `docs/` 配下に自由に置く（例: `requirements.md`・`architectu
 | 現在位置 | `tri status` |
 | 作業に必要な文脈 | `tri context T-0003 --emit`（`REQ-0004`・`docs/x.md#見出し`・`src/path.py` も起点にできる） |
 | 差分の一覧 | `tri gaps`（Docs の `（計画: T-nnnn）`・`（未確定）` 等と、Task から参照されていない REQ） |
-| Task | `tri task new "題" --refs REQ-0004 --code src/search/` → `task verify` → `task close` |
+| Task | `tri task new "題" --refs REQ-0004 --code src/search/` → `task verify [--against-base]` → `task report` → `task close` |
 | 変更の影響 | `tri impact --git`（作業差分から見直すべき Docs と関係 Task） |
 | 検査 | `tri check [--changed]` |
 | 変更履歴 | `tri log Changed "何を・なぜ" --refs T-0003` |

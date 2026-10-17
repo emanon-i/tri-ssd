@@ -293,12 +293,23 @@ def cmd_task(a):
         for ac, res, detail in results:
             print(f"- {ac.label} {res}  {detail}")
             bad += res == "FAIL"
+        if a.against_base:
+            passed = [ac.label for ac, res, _ in results if res == "PASS"]
+            base = tasks.against_base(Project(a.root), a.id, passed)
+            if not base and passed:
+                print("\n着手時点との比較: 実行できません（着手時点のコミット base が無い、または git 管理外）")
+            for label, res in base.items():
+                note = "→ 変更を確かめている" if res == "FAIL" else "→ ⚠️ 着手時点でも通る（振る舞いを変えない Task でなければ、この検証は変更を確かめていない）"
+                print(f"- {label} 着手時点 {res}  {note}")
         manual = [ac.label for ac, res, _ in results if res == "MANUAL"]
         if manual:
             print(f"\n手動確認が必要: {', '.join(manual)} → 確認後 task record {a.id} <AC> pass --note \"確認内容\"")
         print("\n※ PASS は検証コマンドが成功したことだけを示す。そのコマンドが AC の文言どおりの振る舞いを確かめているか、"
               "AC 全体で「目的の状態」を覆っているかは別途確認すること")
         return 1 if bad else 0
+    if a.tcmd == "report":
+        print(tasks.report(p, a.id), end="")
+        return 0
     if a.tcmd == "record":
         print(tasks.record(p, a.id, a.ac, a.result, a.note))
         return 0
@@ -454,6 +465,10 @@ def build_parser() -> argparse.ArgumentParser:
     t = ts.add_parser("verify", help="AC の 検証: `cmd` を実行し証跡を記録")
     t.add_argument("id")
     t.add_argument("--ac", nargs="*", help="対象 AC（既定: 全 AC）")
+    t.add_argument("--against-base", action="store_true",
+                   help="通った検証を着手時点のコードでも実行し、変更を確かめているか（着手時点では落ちるか）を記録")
+    t = ts.add_parser("report", help="人間向けの報告（目的・満たす仕様・検証・判断・変更・CHANGELOG）を既存の記録から組み立てる")
+    t.add_argument("id")
     t = ts.add_parser("record", help="手動確認の結果を記録")
     t.add_argument("id")
     t.add_argument("ac")

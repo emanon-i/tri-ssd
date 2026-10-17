@@ -52,6 +52,14 @@ class Evidence:
     detail: str
     tree: str | None
 
+    @property
+    def manual(self) -> bool:
+        return self.detail.startswith("手動")
+
+    def stale(self, fp: str | None) -> bool:
+        """コマンドの証跡だけが、取得後のコード変更で古くなる（手で確かめた記録は失効させない）。"""
+        return bool(fp and not self.manual and self.tree and self.tree != "none" and self.tree != fp)
+
 
 def now() -> str:
     return dt.datetime.now().strftime("%Y-%m-%d %H:%M")
@@ -279,7 +287,7 @@ def progress(doc, fp: str | None = None) -> tuple[int, int, int]:
         e = lt.get(ac.label)
         if e and e.result == "PASS":
             ok += 1
-            if fp and e.tree and e.tree != "none" and e.tree != fp:
+            if e.stale(fp):
                 stale += 1
     return ok, len(acs), stale
 
@@ -327,6 +335,120 @@ def verify(p: Project, id_: str, only: list[str] | None = None, timeout: int = 9
     return results
 
 
+def _run_all(cmds: list[str], cwd: Path, timeout: int) -> bool:
+    for cmd in cmds:
+        try:
+            if subprocess.run(cmd, shell=True, cwd=cwd, capture_output=True, text=True, timeout=timeout).returncode != 0:
+                return False
+        except subprocess.TimeoutExpired:
+            return False
+    return True
+
+
+def against_base(p: Project, id_: str, labels: list[str], timeout: int = 900) -> dict[str, str]:
+    """検証コマンドを着手時点（base）のコードで実行する。着手時点のコードでも通る検証は、変更について何も確かめていない。
+
+    base の作業ツリーを一時的に作り、検証コマンドが名指しする変更済みファイル（新しいテスト等）だけを
+    現在の内容で重ねてから実行する。結果: FAIL = 変更を確かめている / PASS = 確かめていない可能性。
+    """
+    doc = find_task(p, id_)
+    base = str(doc.fm.get("base") or "")
+    acs = [a for a in parse_acs(doc.text) if a.label in labels and a.commands]
+    if not base or not acs:
+        return {}
+    changed = changed_paths(p.root, base)
+    out: dict[str, str] = {}
+    with tempfile.TemporaryDirectory() as tmp:
+        wt = Path(tmp) / "base"
+        r = subprocess.run(["git", "worktree", "add", "--detach", "--quiet", str(wt), base],
+                           cwd=p.root, capture_output=True, text=True)
+        if r.returncode != 0:
+            return {}
+        try:
+            for ac in acs:
+                cmdline = " ".join(ac.commands)
+                for f in changed:
+                    module = f[:-3].replace("/", ".") if f.endswith(".py") else None
+                    named = f in cmdline or (module and module in cmdline) or re.search(
+                        rf"(?<![\w/.-]){re.escape(Path(f).name)}(?![\w.-])", cmdline)
+                    if named and (p.root / f).is_file():
+                        (wt / f).parent.mkdir(parents=True, exist_ok=True)
+                        shutil.copy2(p.root / f, wt / f)
+                out[ac.label] = "PASS" if _run_all(ac.commands, wt, timeout) else "FAIL"
+        finally:
+            subprocess.run(["git", "worktree", "remove", "--force", str(wt)], cwd=p.root, capture_output=True)
+    lines = []
+    stamp = now()
+    for label, res in out.items():
+        meaning = "変更を確かめている" if res == "FAIL" else "着手時点でも通る。振る舞いを変えない Task でなければ変更を確かめていない"
+        lines.append(f"- {stamp} {label} 着手時点 {res}（{meaning}）")
+    if lines:
+        doc = find_task(p, id_)
+        _write(p, doc.path, _append_evidence(doc.text, lines))
+    return out
+
+
+DECISION_HEAD_RE = re.compile(r"^判断|^decision", re.I)
+BASE_LINE_RE = re.compile(r"^- (\S+ \S+) (AC\d+) 着手時点 (PASS|FAIL)")
+
+
+def _section_text(text: str, head_re) -> str:
+    rng = _section_range(text, head_re)
+    if not rng:
+        return ""
+    lines = text.splitlines()[rng[0] + 1:rng[1]]
+    return md.COMMENT_RE.sub("", "\n".join(lines)).strip()
+
+
+def report(p: Project, id_: str) -> str:
+    """人間がコードを読む代わりに読む報告。新しく書かせず、Task・検証記録・差分・CHANGELOG から組み立てる。"""
+    doc = find_task(p, id_, include_done=True)
+    if not doc:
+        raise SystemExit(f"error: Task {id_} が見つかりません")
+    text = doc.text
+    st = str(doc.fm.get("status"))
+    out = [f"# {id_} {title_of(doc)}（{st}{'・' + str(doc.fm.get('closed')) if doc.fm.get('closed') else ''}）", ""]
+    out += ["## 目的の状態", "", _section_text(text, re.compile("目的の状態")) or "（未記入）", ""]
+    refs = md.fm_list(doc.fm, "refs")
+    if refs:
+        out += ["## 満たす仕様", ""]
+        for r in refs:
+            key = p.resolve(p._target(doc.path, r))
+            sec = p.sections.get(key) if key else None
+            if not sec:
+                out.append(f"- {r}（見つかりません）")
+                continue
+            body = next((x.strip() for x in sec.text.splitlines()[1:] if x.strip()), "")
+            name = sec.title if sec.title.startswith(r) else f"{r}: {sec.title}"
+            out.append(f"- {name}" + (f" — {body[:80]}" if body else ""))
+        out.append("")
+    lt = latest(parse_evidence(text))
+    base_res = {m.group(2): m.group(3) for m in (BASE_LINE_RE.match(x) for x in text.splitlines()) if m}
+    out += ["## 検証（何を・どう確かめたか）", ""]
+    for ac in parse_acs(text):
+        e = lt.get(ac.label)
+        res = f"{e.result}（{e.when}）" if e else "未検証"
+        b = base_res.get(ac.label)
+        extra = {"FAIL": "／着手時点では落ちる＝変更を確かめている", "PASS": "／⚠️ 着手時点でも通る"}.get(b, "")
+        out.append(f"- {ac.label}: {ac.text}")
+        out.append(f"  - 方法: {ac.verify or '未記載'}")
+        out.append(f"  - 結果: {res}{extra}")
+    out.append("")
+    decision = _section_text(text, DECISION_HEAD_RE)
+    if decision:
+        out += ["## 判断（なぜこの方法か）", "", decision, ""]
+    if doc.kind == "task":
+        changed = changed_paths(p.root, str(doc.fm.get("base") or "") or None)
+        if changed:
+            out += [f"## 変更したファイル（着手時点 {doc.fm.get('base')} からの差分）", ""]
+            out += [f"- {c}" for c in changed if not c.startswith("docs/tasks/")]
+            out.append("")
+    cl = p.docs.get("CHANGELOG.md")
+    logged = [x.strip() for x in (cl.text.splitlines() if cl else []) if id_ in x and x.strip().startswith("-")]
+    out += ["## CHANGELOG", ""] + (logged or ["（記録なし）"])
+    return "\n".join(out).rstrip() + "\n"
+
+
 def record(p: Project, id_: str, label: str, result: str, note: str) -> str:
     doc = find_task(p, id_)
     if not doc:
@@ -360,7 +482,7 @@ def gate(p: Project, doc) -> list[str]:
             fails.append(f"{ac.label}: 検証記録がありません（{hint}）")
         elif e.result != "PASS":
             fails.append(f"{ac.label}: 最新の検証結果が {e.result} です")
-        elif fp and e.tree and e.tree != "none" and e.tree != fp:
+        elif e.stale(fp):
             fails.append(f"{ac.label}: 検証後にコードが変更されています（tree {e.tree} → {fp}）。再検証が必要")
     for d in p.docs.values():
         if d.kind not in ("goal", "doc"):
@@ -369,10 +491,42 @@ def gate(p: Project, doc) -> list[str]:
             for m in MARKER_RE.finditer(line):
                 if m.group(1) == "計画" and m.group(2) == id_:
                     fails.append(f"{d.path}:{ln + 1} に（計画: {id_}）が残っています。実装済みの状態として記述を確定しマーカーを外す")
+    relevant = relevant_docs(p, doc)
     for issue in run_check(p):
-        if issue.level == "error" and issue.code != "stale-marker":
+        if issue.level == "error" and issue.code != "stale-marker" and issue.path in relevant:
             fails.append(f"check: {issue}")
     return fails
+
+
+def changed_paths(root: Path, base: str | None) -> list[str]:
+    """base から作業ツリーまでに差分のあるパス（未追跡を含む。テスト・ビルドの副産物は除く）。"""
+    if not base:
+        return []
+    out = []
+    for args in (["diff", "--name-only", base, "--"], ["ls-files", "-o", "--exclude-standard"]):
+        try:
+            r = subprocess.run(["git", *args], cwd=root, capture_output=True, text=True, timeout=60)
+        except (OSError, subprocess.TimeoutExpired):
+            return []
+        if r.returncode == 0:
+            out += [x for x in r.stdout.splitlines() if x]
+    return sorted({x for x in out if not is_artifact(x) and not x.startswith(".tri-ssd/")})
+
+
+def relevant_docs(p: Project, doc) -> set[str]:
+    """完了ゲートが検査エラーを見る範囲: Task 自身・Task が参照する文書・この Task の間に変更した文書。
+
+    無関係な文書の誤りで正当な完了を止めない（止めると強制完了が常態化し、ゲートが信用されなくなる）。
+    """
+    out = {doc.path}
+    for e in p.edges:
+        if e.src.split("#")[0] == doc.path and e.kind != "contains":
+            dst = p.resolve(e.dst)
+            if dst and not dst.startswith("code:"):
+                out.add(dst.split("#")[0])
+    out |= {x for x in changed_paths(p.root, str(doc.fm.get("base") or "") or None)
+            if x.startswith("docs/") or x == "CHANGELOG.md"}
+    return out
 
 
 def close(p: Project, id_: str, force_reason: str | None = None, drop: bool = False) -> tuple[list[str], str | None]:

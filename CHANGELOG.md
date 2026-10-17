@@ -6,6 +6,10 @@ Tri-SSD (Tri-Layer Slice Spec Driven) フレームワークの変更履歴です
 
 ## [Unreleased]
 
+### Added
+
+- 検証の要所化と報告: 着手時点との比較で変更を確かめていない検証を警告し、人間向けの報告を既存の記録から組み立てる。ゲートは関係する文書の誤りだけで止め、手の確認は失効させない（T-0011）
+
 ## [6.0.0] - 2026-10-16
 
 知識ライフサイクル管理とコンテキスト最適化のハーネスへ再設計（破壊的変更）。判断の背景は docs/adr/0001-knowledge-harness.md。
@@ -20,6 +24,8 @@ Tri-SSD (Tri-Layer Slice Spec Driven) フレームワークの変更履歴です
 - **Task と完了ゲート**: AC ごとの検証コマンド実行と証跡記録（`task verify`・`task record`）、作業ツリー指紋による古い証跡の検出、`task close` のゲート
 - **Note**: 分類不要の追記・上書きの引き継ぎ・整理候補の提示・git 管理外のローカル領域（`.tri-ssd/`）
 - **フック**: SessionStart で現在位置を注入、PostToolUse で編集した Docs の検査結果を返し、docs/ の参照を記録。Python が無い環境では何もしない
+- **着手時点との比較**（`task verify --against-base`）: 検証を着手時点のコードでも実行し、そこでも通る（変更を確かめていない）検証を警告
+- **報告**（`task report`）: 目的・満たす仕様・検証・判断・変更・CHANGELOG を既存の記録から組み立てる。人間はコードの代わりにこれを読む
 - **書かれていない依存の候補**: `task close` が、Task の間に変更したコードを記述する Docs と参照した Docs のうち context に入っていなかったものを示す
 - **旧構成からの移行**（`migrate`。既定はドライラン）
 - 自動テスト（unittest）・長期運用シミュレーション（`tests/simulate.py`）・コンテキスト効率の実測（`tests/eval_context.py`、docs/evaluation.md）
