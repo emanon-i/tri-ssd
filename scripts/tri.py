@@ -2,15 +2,17 @@
 """Tri-SSD CLI — 知識ライフサイクル管理とコンテキスト最適化のための決定的処理。
 
 標準ライブラリのみで動作する。プロジェクトルート（docs/ の親）で実行するか --root を指定する。
+PATH 上の `tri`（scripts/install.py が置く起動スクリプト）から呼ぶ。
 
-    python3 tri.py status                       # 現在位置（Task・引き継ぎ・健全性）
-    python3 tri.py context T-0003 --emit        # Task に必要な Docs セクションだけを取得
-    python3 tri.py impact --git                 # 作業差分から見直すべき Docs を逆引き
-    python3 tri.py check [--changed]            # 参照切れ・履歴汚染・重複・肥大化の検査
-    python3 tri.py task new|list|verify|record|close|drop|start ...
-    python3 tri.py handoff "現在位置・次の一手"     # 引き継ぎを上書き
-    python3 tri.py log Changed "..." --refs T-0003
-    python3 tri.py gaps | id T | init | migrate [--apply]
+    tri status                       # 現在位置（Task・引き継ぎ・健全性）
+    tri context T-0003 --emit        # Task に必要な Docs セクションだけを取得
+    tri impact --git                 # 作業差分から見直すべき Docs を逆引き
+    tri check [--changed]            # 参照切れ・履歴汚染・重複・肥大化の検査
+    tri task new|list|verify|record|close|drop|start ...
+    tri handoff "現在位置・次の一手"     # 引き継ぎを上書き
+    tri log Changed "..." --refs T-0003
+    tri guide knowledge-model        # Skill が参照する規約を表示
+    tri gaps | id T | init | migrate [--apply]
 
 終了コード: 0 = 正常 / 1 = 検査エラー・ゲート未達 / 2 = 引数・対象の誤り / 3 = 予算超過で必須情報を省略
 """
@@ -36,7 +38,8 @@ for _stream in (sys.stdin, sys.stdout, sys.stderr):  # Windows の既定（cp932
 from trissd import admin, check, md, notes, resolve, tasks  # noqa: E402
 from trissd.project import Project  # noqa: E402
 
-SCRIPT = Path(__file__).resolve().as_posix()
+GUIDES = Path(__file__).resolve().parents[1] / "docs"
+GUIDE_NAMES = ("knowledge-model", "writing-rules")
 
 
 def _stdin_json() -> dict:
@@ -63,7 +66,7 @@ def cmd_status(a):
         root = Path(data.get("cwd") or a.root)
         if not admin.is_project(root):
             return 0
-    print(admin.status(Project(root), SCRIPT, a.hook))
+    print(admin.status(Project(root), a.hook))
     return 0
 
 
@@ -325,12 +328,17 @@ def cmd_migrate(a):
     for line in admin.migrate(Path(a.root), a.apply):
         print(f"- {line}" if not line.startswith("（") else line)
     if a.apply:
-        print(f"\n次: python3 {SCRIPT} check で参照切れを確認し、goal.md から REQ 詳細を Docs へ分離（Goal は短く）")
+        print("\n次: tri check で参照切れを確認し、goal.md から REQ 詳細を Docs へ分離（Goal は短く）")
+    return 0
+
+
+def cmd_guide(a):
+    print((GUIDES / f"{a.name}.md").read_text(encoding="utf-8"), end="")
     return 0
 
 
 def build_parser() -> argparse.ArgumentParser:
-    ap = argparse.ArgumentParser(prog="tri.py", description="Tri-SSD CLI")
+    ap = argparse.ArgumentParser(prog="tri", description="Tri-SSD CLI")
     ap.add_argument("--root", default=os.environ.get("TRI_SSD_ROOT", "."), help="プロジェクトルート（既定: カレント）")
     sub = ap.add_subparsers(dest="cmd", required=True)
 
@@ -415,6 +423,10 @@ def build_parser() -> argparse.ArgumentParser:
     s.add_argument("prefix", choices=md.ID_PREFIXES)
     s.add_argument("--count", type=int, default=1)
     s.set_defaults(fn=cmd_id)
+
+    s = sub.add_parser("guide", help="Skill が参照する Tri-SSD の規約（知識モデル・記載規約）を表示")
+    s.add_argument("name", choices=GUIDE_NAMES)
+    s.set_defaults(fn=cmd_guide)
 
     s = sub.add_parser("migrate", help="旧 Tri-SSD（L0-L3）から移行（既定はドライラン）")
     s.add_argument("--apply", action="store_true")

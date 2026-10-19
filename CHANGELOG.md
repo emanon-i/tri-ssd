@@ -6,6 +6,22 @@ Tri-SSD (Tri-Layer Slice Spec Driven) フレームワークの変更履歴です
 
 ## [Unreleased]
 
+## [7.0.0] - 2026-10-19
+
+Claude Code のプラグインをやめ、Claude Code・Codex・Pi・OpenCode が同じ Skill と CLI を使う配布にした。プラグインとして入れていた場合は、プラグインを外してから README の「インストール」に従って `python scripts/install.py` とフックの登録を行う。
+
+### Added
+
+- `scripts/install.py`: CLI の実行一式・起動スクリプト `tri`（Windows では `tri.cmd` も）・Skill の写しを1回で置く。再実行で同じ状態に収束する。`tri guide <名前>`: Skill が参照する規約（知識モデル・記載規約）を表示する（T-0017）
+
+### Changed
+
+- 配布をプラグインから、共有 Skill と PATH 上の CLI `tri` に変えた。Claude Code・Codex・Pi・OpenCode が1つの正本から同じ版を使うため（ADR-0003）。Skill は `tri-ssd-setup`・`tri-ssd-task`・`tri-ssd-docs` に改名し、Agent Skills の形式（`name`・`when_to_use` を含めた `description`）にした。Skill は置換変数を使わず `tri` と `tri guide` を呼ぶ（T-0017）
+
+### Removed
+
+- `.claude-plugin/marketplace.json` と `hooks/hooks.json`。Claude Code のフックは利用者の `~/.claude/settings.json` に `tri status --hook`・`tri check --hook` として登録する（README）。`plugin.json` は `claude plugin eval` で Skill を束ねるためだけに残す（T-0017）
+
 ### Fixed
 
 - Windows（cp932）で `handoff -` に日本語を渡すと落ちる不具合を直した。標準入力も UTF-8 で読み、git と検証コマンドの出力も UTF-8 で読む（読めないバイトは置き換える）。フックの JSON の日本語のパスも正しく読む。migrate の報告のパス区切りを / にそろえた（T-0016）

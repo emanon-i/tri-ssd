@@ -1,6 +1,6 @@
 ---
-description: Tri-SSD プロジェクト（docs/goal.md がある）で開発作業を進める。作業開始時に現在位置と Task に必要な文脈だけを CLI で取得し、仕様と実装の差分を Task にし、受け入れ条件を検証証跡付きで満たして完了させる。作業メモと次のセッションへの引き継ぎも扱う。
-when_to_use: 実装して・続きをやって・次は何をする？・T-0003 をやって・このバグを直して・この仕様を実装して・Task を作って・検証して・完了にして・作業を再開して・メモしておいて・引き継ぎを書いて・今日はここまで、と言われたとき。Tri-SSD のプロジェクトでコードを変更する作業全般。英語では implement / continue / next task / fix this / close the task。文書の改訂や、仕様の値・方針を変えたい依頼は docs（実装も要るなら docs の手順が Task を作る）、導入・移行は setup を使う。docs/goal.md の無いリポジトリでの作業には使わない。
+name: tri-ssd-task
+description: Tri-SSD プロジェクト（docs/goal.md がある）で開発作業を進める。作業開始時に現在位置と Task に必要な文脈だけを CLI で取得し、仕様と実装の差分を Task にし、受け入れ条件を検証証跡付きで満たして完了させる。作業メモと次のセッションへの引き継ぎも扱う。 実装して・続きをやって・次は何をする？・T-0003 をやって・このバグを直して・この仕様を実装して・Task を作って・検証して・完了にして・作業を再開して・メモしておいて・引き継ぎを書いて・今日はここまで、と言われたとき。Tri-SSD のプロジェクトでコードを変更する作業全般。英語では implement / continue / next task / fix this / close the task。文書の改訂や、仕様の値・方針を変えたい依頼は tri-ssd-docs（実装も要るなら tri-ssd-docs の手順が Task を作る）、導入・移行は tri-ssd-setup を使う。docs/goal.md の無いリポジトリでの作業には使わない。
 argument-hint: "[T-xxxx | 作業内容] - 対象 Task または依頼内容（省略時は現在位置から選ぶ）"
 allowed-tools: Read, Edit, Write, Glob, Grep, Bash
 ---
@@ -9,8 +9,8 @@ allowed-tools: Read, Edit, Write, Glob, Grep, Bash
 
 <tri_ssd_context>
 Tri-SSD: Goal（docs/goal.md）・Docs（docs/ のあるべき状態）・Tasks（docs/tasks/ 差分を解消する検証可能な作業。作業メモも Task の中）・引き継ぎ（docs/notes/handoff.md）・CHANGELOG（意味のある変更の履歴）。常に守る規則はエージェントが常に読む指示ファイル（CLAUDE.md・AGENTS.md）に置く。
-決定的処理は CLI `python3 "${CLAUDE_SKILL_DIR}/../../scripts/tri.py"`（以下 `tri`）で行う。`tri` はカレントディレクトリをプロジェクトとして扱うので、プロジェクトのルートでこの絶対パスのまま実行する（プラグインのディレクトリへ cd しない）。文書を開く前に `tri context` で必要なセクションだけを取得する。
-置き場・寿命の判断に迷ったら `${CLAUDE_SKILL_DIR}/../../docs/knowledge-model.md` を読むこと。
+決定的処理は PATH 上の CLI `tri` で行う。`tri` はカレントディレクトリをプロジェクトとして扱うので、プロジェクトのルートで実行する（Tri-SSD の導入先へ cd しない）。文書を開く前に `tri context` で必要なセクションだけを取得する。
+置き場・寿命の判断に迷ったら `tri guide knowledge-model` の出力を読むこと。
 </tri_ssd_context>
 
 <avoid_over_engineering>
@@ -58,7 +58,7 @@ context に含まれなかったが作業に必要だった Docs の節やコー
 | 状況 | 扱い |
 |---|---|
 | Docs が正しく、コードが未達 | Task を作り、Docs の該当記述に `（計画: T-nnnn）` を付ける |
-| Docs が誤り | docs スキルの手順で Docs を直す |
+| Docs が誤り | tri-ssd-docs スキルの手順で Docs を直す |
 | 設計が未確定 / 意図的に後回し / 前提が未検証 | Docs に `（未確定）` / `（保留）` / `（未検証）` を付ける。必要なら判断材料を Task の `## メモ` か引き継ぎに残す |
 
 ```bash
@@ -93,7 +93,7 @@ tri task new "タグ検索" --slug tag-search ...   # 題が日本語ならフ�
 ### 5. Docs を実装後の状態にする
 
 - この Task で満たした記述の `（計画: T-xxxx）` を外す（外さないと完了ゲートを通らない）。マーカーが無ければ何もしない
-- `tri impact --git` で見直すべき Docs を確認し、実装と食い違う記述は docs スキルの更新プロトコルで直す
+- `tri impact --git` で見直すべき Docs を確認し、実装と食い違う記述は tri-ssd-docs スキルの更新プロトコルで直す
 - `## メモ` のうち検証済みで今後も真な発見（外部仕様・制約）は Docs へ移す。全作業で守るべき規則になったものは指示ファイル（CLAUDE.md 等）に1行で書く
 
 ### 6. 検証する
@@ -143,8 +143,8 @@ EOF
 
 | ケース | 対応 |
 |---|---|
-| docs/goal.md も docs/tasks/ も無い | setup スキルで初期化・導入する |
+| docs/goal.md も docs/tasks/ も無い | tri-ssd-setup スキルで初期化・導入する |
 | `tri context` が終了コード 3 | 必須セクションが予算を超えた。省略一覧を読むか `--budget` を増やす |
 | `task verify` が FAIL | 実装を直して再検証する。3 回続けて同じ失敗なら原因と選択肢をユーザーに報告する |
 | ゲートが「検証後にコードが変更」 | `tri task verify` を再実行する |
-| `python3` が無い | `python` / `py` で同じコマンドを実行する |
+| `tri` が見つからない | Tri-SSD の CLI が導入されていない。README の「インストール」（`python scripts/install.py`）をユーザーに案内する |

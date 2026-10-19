@@ -1,6 +1,6 @@
 # Tri-SSD
 
-AI コーディングエージェントによる長期開発のための、知識ライフサイクル管理とコンテキスト最適化のハーネス（Claude Code プラグイン）。
+AI コーディングエージェントによる長期開発のための、知識ライフサイクル管理とコンテキスト最適化のハーネス。Claude Code・Codex・Pi・OpenCode が同じ Skill と CLI `tri` を使う。
 
 - **知識を寿命で分ける**: Goal（目的）・Docs（あるべき状態）・Tasks（差分を解消する作業。作業メモも Task の中）・引き継ぎ（上書きで1つ）・CHANGELOG（変更履歴）。溜まり続ける置き場を作らない
 - **必要な部分だけ読む**: Task・ID・コードパスを起点に、読むべきセクションだけを知識グラフから選ぶ（理由・予算・省略の明示付き）
@@ -11,29 +11,60 @@ AI コーディングエージェントによる長期開発のための、知�
 
 ## インストール
 
+必要なもの: Python 3.9 以上（動作を確認した下限。標準ライブラリのみ）と git。外部サービス・追加パッケージは不要。
+
 ```bash
-/plugin marketplace add emanon-i/tri-ssd
-/plugin install tri-ssd@emanon-i-tri-ssd
+git clone https://github.com/emanon-i/tri-ssd
+cd tri-ssd
+python scripts/install.py    # python が無ければ python3
 ```
 
-必要なもの: Python 3.9 以上（動作を確認した下限。標準ライブラリのみ）と git。外部サービス・追加パッケージは不要。
+1 回のコマンドで、CLI と Skill を同じ版で置く。リンクは作らず写しを置き、再実行すると同じ状態になる（更新も同じコマンド）。
+
+| オプション（既定） | 置くもの |
+|---|---|
+| `--prefix`（`~/.local/share/tri-ssd`） | CLI の実行一式 |
+| `--bin`（`~/.local/bin`） | 起動スクリプト `tri`（Windows では `tri.cmd` も）。PATH の通ったフォルダを指定する |
+| `--skills`（`~/.agents/skills`。複数可） | Skill `tri-ssd-setup`・`tri-ssd-task`・`tri-ssd-docs` |
+
+Codex・Pi・OpenCode は `~/.agents/skills` を読む。Claude Code は `~/.claude/skills` を読むので、`--skills ~/.agents/skills --skills ~/.claude/skills` と2か所に写すか、`~/.claude/skills` から `~/.agents/skills` の各 Skill へリンクを張る。
+
+Claude Code では、`~/.claude/settings.json` にフックを登録する（既に `hooks` があれば各イベントの配列に足す）。セッション開始時に現在位置を文脈へ入れ、`docs/` の Markdown を編集した直後に検査結果を返す。Tri-SSD プロジェクト以外と `tri` が無い環境では何もしない。
+
+```json
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup|resume|clear|compact",
+        "hooks": [{ "type": "command", "command": "tri status --hook 2>/dev/null || true", "timeout": 30 }]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [{ "type": "command", "command": "tri check --hook 2>/dev/null || true", "timeout": 30 }]
+      }
+    ]
+  }
+}
+```
 
 | Skill | 使う場面 |
 |---|---|
-| `/tri-ssd:task` | 実装・バグ修正・Task の作成・検証・完了・作業の再開・作業メモ・引き継ぎ |
-| `/tri-ssd:docs` | Goal・仕様・設計の作成と改訂、判断の記録 |
-| `/tri-ssd:setup` | 初期化・既存プロジェクトへの導入・旧版からの移行 |
+| `tri-ssd-task` | 実装・バグ修正・Task の作成・検証・完了・作業の再開・作業メモ・引き継ぎ |
+| `tri-ssd-docs` | Goal・仕様・設計の作成と改訂、判断の記録 |
+| `tri-ssd-setup` | 初期化・既存プロジェクトへの導入・旧版からの移行 |
 
 Skill は会話の内容から自動で選ばれる。名前を覚える必要はない。
-プラグインは2つのフックを登録する: セッション開始時に現在位置を文脈へ入れ、`docs/` の Markdown を編集した直後に検査結果を返す。Tri-SSD プロジェクト以外や Python が見つからない環境では何もしない。
 
 ## 初期化
 
 ```bash
-python3 <plugin>/scripts/tri.py init --name "My App"
+tri init --name "My App"
 ```
 
-または Claude に「Tri-SSD を始めたい」と伝える（setup スキル）。作成されるもの:
+またはエージェントに「Tri-SSD を始めたい」と伝える（tri-ssd-setup スキル）。作成されるもの:
 
 ```text
 docs/
@@ -49,7 +80,7 @@ Docs は `docs/` 配下に自由に置く（例: `requirements.md`・`architectu
 
 ## 日常の使い方
 
-普段は Claude に依頼するだけでよい（「T-0003 をやって」「この仕様を変えたい」「今日はここまで」）。Skill が以下の CLI を使う。
+普段はエージェントに依頼するだけでよい（「T-0003 をやって」「この仕様を変えたい」「今日はここまで」）。Skill が以下の CLI を使う。
 
 | 場面 | コマンド |
 |---|---|
@@ -62,7 +93,7 @@ Docs は `docs/` 配下に自由に置く（例: `requirements.md`・`architectu
 | 変更履歴 | `tri log Changed "何を・なぜ" --refs T-0003` |
 | 引き継ぎ | `tri handoff -`（標準入力から。上書き） |
 
-`tri` は `python3 <plugin>/scripts/tri.py` の略。プロジェクトルートで実行する（または `--root`）。
+`tri` はプロジェクトルートで実行する（または `--root`）。Skill が参照する規約は `tri guide knowledge-model`・`tri guide writing-rules` で読める。
 
 典型的な1サイクル:
 
@@ -104,13 +135,13 @@ PH・F の ID は互換のため引き続き有効。新しい Task は `T-nnnn`
 
 | 旧スキル | 新しい手段 |
 |---|---|
-| `/init-tri-ssd` | setup スキル（`tri init`） |
-| `/gen-l1`・`/gen-l2`・`/gen-interface`・`/gen-data`・`/gen-doc` | docs スキル（種類別ガイドは `skills/docs/references/doc-guide.md`） |
-| `/gen-l3`・`/reshape-l3` | task スキル（`tri task new`。フェーズの代わりに検証可能な Task） |
-| `/gen-code` | task スキル（`context` → 実装 → `task verify`） |
+| `/init-tri-ssd` | tri-ssd-setup スキル（`tri init`） |
+| `/gen-l1`・`/gen-l2`・`/gen-interface`・`/gen-data`・`/gen-doc` | tri-ssd-docs スキル（種類別ガイドは `skills/tri-ssd-docs/references/doc-guide.md`） |
+| `/gen-l3`・`/reshape-l3` | tri-ssd-task スキル（`tri task new`。フェーズの代わりに検証可能な Task） |
+| `/gen-code` | tri-ssd-task スキル（`context` → 実装 → `task verify`） |
 | `/archive-l3` | `tri task close`（ゲート・アーカイブ）＋ `tri log` |
 | `/review-tri-ssd` | `tri check`・`tri gaps`・`tri status` |
-| `/next-tri-ssd` | SessionStart フックと `tri status` |
+| `/next-tri-ssd` | Claude Code の SessionStart フックと `tri status` |
 
 ## 開発
 
@@ -118,12 +149,13 @@ PH・F の ID は互換のため引き続き有効。新しい Task は `T-nnnn`
 python3 -m unittest discover -s tests -p "test_*.py"   # 自動テスト
 python3 tests/simulate.py --cycles 10                   # 長期運用シミュレーション
 python3 tests/eval_context.py                           # コンテキスト効率の実測
+python3 scripts/install.py                              # 作業ツリーを導入（Skill の評価は PATH 上の tri を使う）
 python3 evals/trigger/build.py                          # 発火評価のケースを生成（evals/trigger/queries.json から）
 claude plugin eval . --tag trigger --ablation none --scaffold --allow-tools Bash Write Edit   # Skill の発火（有料）
-claude plugin eval . --tag heldout --scaffold --allow-tools Bash Write Edit                   # Skill の成果をプラグイン無しと比較（有料）
+claude plugin eval . --tag heldout --scaffold --allow-tools Bash Write Edit                   # Skill の成果を Skill 無しと比較（有料）
 ```
 
-このリポジトリ自身も Tri-SSD で管理している（`docs/goal.md`・`docs/tasks/`）。変更履歴は [CHANGELOG.md](CHANGELOG.md)。
+このリポジトリ自身も Tri-SSD で管理している（`docs/goal.md`・`docs/tasks/`）。`.claude-plugin/plugin.json` は `claude plugin eval` で Skill を束ねるためだけにあり、導入には使わない。変更履歴は [CHANGELOG.md](CHANGELOG.md)。
 
 ## ライセンス
 

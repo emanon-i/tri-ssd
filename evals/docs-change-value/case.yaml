@@ -18,7 +18,7 @@ graders:
   - name: skill-docs-fired
     type: tool_used
     tool: Skill
-    input_match: '"skill"\s*:\s*"(?:tri-ssd:)?docs"'
+    input_match: '"skill"\s*:\s*"(?:tri-ssd:)?tri-ssd-docs"'
   - name: no-cd-into-plugin
     # tri はカレントディレクトリのプロジェクトを扱う。プラグインのディレクトリへ cd すると別のプロジェクトを操作してしまう
     type: tool_used

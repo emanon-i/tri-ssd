@@ -1,5 +1,5 @@
 ---
-code: [scripts/, skills/, hooks/]
+code: [scripts/, skills/]
 ---
 # アーキテクチャ
 
@@ -22,15 +22,15 @@ flowchart LR
 
 | 要素 | 責務 | 実装 |
 |---|---|---|
-| Skills | エージェントへの手順（いつ・どのコマンドを使い・何を判断するか）。Agent Skills の形式で、特定のエージェントの置換変数を使わない（計画: T-0017） | `skills/` |
+| Skills | エージェントへの手順（いつ・どのコマンドを使い・何を判断するか）。Agent Skills の形式で、特定のエージェントの置換変数を使わない | `skills/` |
 | CLI | 決定的処理の入口。PATH 上の `tri` で呼ぶ。Python 3.9+ の標準ライブラリのみ（REQ-0009） | `scripts/tri.py` |
 | 知識グラフ | 文書の分類・セクション・ID 定義・エッジを毎回元データから導出する。索引ファイル・キャッシュは持たない | `scripts/trissd/project.py` |
 | Markdown 解析 | frontmatter・見出し・ID・リンク・コードパス・トークン推定 | `scripts/trissd/md.py` |
 | テンプレート | Goal・Task・CHANGELOG の雛形。書式の正（CLI はこれを写すだけ） | `templates/` |
-| Hooks | Claude Code でのセッション開始時の状況注入と、Docs 編集直後の検査。利用者の `~/.claude/settings.json` に登録する（計画: T-0017） | `hooks/hooks.json` |
+| Hooks | Claude Code でのセッション開始時の状況注入と、Docs 編集直後の検査。利用者の `~/.claude/settings.json` に登録する（登録例は README） | `scripts/tri.py`（`--hook`） |
 | 導入 | CLI・Skill を同じ版で配る（[配布](#配布)） | `scripts/install.py` |
 
-Skills は [知識モデル](knowledge-model.md) と [記載規約](writing-rules.md) を `tri guide <名前>` の出力で読み、規約を複製しない。（計画: T-0017）
+Skills は [知識モデル](knowledge-model.md) と [記載規約](writing-rules.md) を `tri guide <名前>` の出力で読み、規約を複製しない。
 
 ## 知識グラフ
 
@@ -116,7 +116,7 @@ ID の定義: Task は frontmatter `id`、REQ は Goal・Docs の見出しの先
 
 ## フック
 
-Claude Code のフックとして、利用者の `~/.claude/settings.json` に登録する（登録する内容は README の「インストール」）。（計画: T-0017）
+Claude Code のフックとして、利用者の `~/.claude/settings.json` に登録する（登録する内容は README の「インストール」）。
 
 | イベント | 処理 |
 |---|---|
@@ -124,11 +124,11 @@ Claude Code のフックとして、利用者の `~/.claude/settings.json` に�
 | PostToolUse（Edit・Write・MultiEdit） | `tri check --hook`: 編集した `docs/` の文書に関する指摘だけを `additionalContext` で返す |
 
 フックはすべてのプロジェクトで発火する。Tri-SSD プロジェクト以外と、`tri` が見つからない環境では何もしない（Skill の手順だけで全機能が使える。フックは自動化の保険）。
-フックの無いエージェント（Codex・Pi・OpenCode）は、task スキルの手順 1 で `tri status` を実行して同じ状況を得る。
+フックの無いエージェント（Codex・Pi・OpenCode）は、tri-ssd-task スキルの手順 1 で `tri status` を実行して同じ状況を得る。
 
 ## 配布
 
-REQ-0010 を実現する。`python scripts/install.py` が、リポジトリから CLI と Skill の写しを作る。リンクは作らない。（計画: T-0017）
+REQ-0010 を実現する。`python scripts/install.py` が、リポジトリから CLI と Skill の写しを作る。リンクは作らない。
 
 | 置き場（オプション・既定） | 中身 |
 |---|---|
@@ -150,4 +150,4 @@ REQ-0010 を実現する。`python scripts/install.py` が、リポジトリか�
 - 単体・結合テストは標準ライブラリの unittest（`tests/`）。フィクスチャは `tests/fixtures/`
 - 長期運用は `tests/simulate.py` が操作列を決定的に再現し、健全性の不変条件を `tests/test_simulation.py` が検証する
 - コンテキスト効率は `tests/eval_context.py` が実測する。結果は [評価](evaluation.md)
-- Skill は `claude plugin eval` で評価する。`.claude-plugin/plugin.json` は評価のために Skill を束ねるだけで、導入には使わない。Skill が呼ぶ `tri` は PATH 上のものなので、評価の前に作業ツリーを `scripts/install.py` で導入する（計画: T-0017）。発火は `evals/trigger/` の依頼で振り分けを測り、成果は `evals/heldout-*` でプラグイン無しと比べる（有料の実エージェント実行なので CI では回さない）。結果は [Skill の評価](skill-evaluation.md)
+- Skill は `claude plugin eval` で評価する。`.claude-plugin/plugin.json` は評価のために Skill を束ねるだけで、導入には使わない。Skill が呼ぶ `tri` は PATH 上のものなので、評価の前に作業ツリーを `scripts/install.py` で導入する。発火は `evals/trigger/` の依頼で振り分けを測り、成果は `evals/heldout-*` でプラグイン無しと比べる（有料の実エージェント実行なので CI では回さない）。結果は [Skill の評価](skill-evaluation.md)

@@ -1,6 +1,6 @@
 {
   "name": "tri-ssd",
-  "version": "6.0.2",
+  "version": "7.0.0",
   "description": "Tri-SSD - AI エージェントの長期開発のための知識ライフサイクル管理とコンテキスト最適化のハーネス",
   "author": {
     "name": "emanon-i"
@@ -8,5 +8,12 @@
   "homepage": "https://github.com/emanon-i/tri-ssd",
   "repository": "https://github.com/emanon-i/tri-ssd",
   "license": "MIT",
-  "keywords": ["tri-ssd", "specification-driven", "development", "framework", "ai", "llm"]
+  "keywords": [
+    "tri-ssd",
+    "specification-driven",
+    "development",
+    "framework",
+    "ai",
+    "llm"
+  ]
 }

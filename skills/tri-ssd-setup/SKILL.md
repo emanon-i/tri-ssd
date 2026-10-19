@@ -1,6 +1,6 @@
 ---
-description: プロジェクトに Tri-SSD を導入する。新規プロジェクトの初期化、既存プロジェクトへの導入（既存コード・文書から Goal と最小限の Docs を起こす）、旧 Tri-SSD（L0〜L3 構成）からの移行を行う。
-when_to_use: Tri-SSD を始めたい・導入したい・セットアップして・初期化して・既存プロジェクトに入れたい・旧バージョンの Tri-SSD から移行したい・l1_requirements や l3_phases がある、と言われたとき。英語では set up Tri-SSD / adopt / migrate from v5。導入済みのプロジェクトでの作業は task・docs を使う。
+name: tri-ssd-setup
+description: プロジェクトに Tri-SSD を導入する。新規プロジェクトの初期化、既存プロジェクトへの導入（既存コード・文書から Goal と最小限の Docs を起こす）、旧 Tri-SSD（L0〜L3 構成）からの移行を行う。 Tri-SSD を始めたい・導入したい・セットアップして・初期化して・既存プロジェクトに入れたい・旧バージョンの Tri-SSD から移行したい・l1_requirements や l3_phases がある、と言われたとき。英語では set up Tri-SSD / adopt / migrate from v5。導入済みのプロジェクトでの作業は tri-ssd-task・tri-ssd-docs を使う。
 argument-hint: "[new | adopt | migrate]"
 allowed-tools: Read, Edit, Write, Glob, Grep, Bash
 ---
@@ -9,8 +9,8 @@ allowed-tools: Read, Edit, Write, Glob, Grep, Bash
 
 <tri_ssd_context>
 Tri-SSD: Goal（docs/goal.md）・Docs（docs/ のあるべき状態）・Tasks（docs/tasks/ 差分を解消する検証可能な作業。作業メモも Task の中）・引き継ぎ（docs/notes/handoff.md）・CHANGELOG（意味のある変更の履歴）。常に守る規則はエージェントが常に読む指示ファイル（CLAUDE.md・AGENTS.md）に置く。
-決定的処理は CLI `python3 "${CLAUDE_SKILL_DIR}/../../scripts/tri.py"`（以下 `tri`）で行う。`tri` はカレントディレクトリをプロジェクトとして扱うので、プロジェクトのルートでこの絶対パスのまま実行する（プラグインのディレクトリへ cd しない）。文書を開く前に `tri context` で必要なセクションだけを取得する。
-置き場・寿命の判断に迷ったら `${CLAUDE_SKILL_DIR}/../../docs/knowledge-model.md` を読むこと。
+決定的処理は PATH 上の CLI `tri` で行う。`tri` はカレントディレクトリをプロジェクトとして扱うので、プロジェクトのルートで実行する（Tri-SSD の導入先へ cd しない）。文書を開く前に `tri context` で必要なセクションだけを取得する。
+置き場・寿命の判断に迷ったら `tri guide knowledge-model` の出力を読むこと。
 </tri_ssd_context>
 
 <avoid_over_engineering>
@@ -30,8 +30,8 @@ Tri-SSD: Goal（docs/goal.md）・Docs（docs/ のあるべき状態）・Tasks�
 ## 新規
 
 1. `tri init --name "<名前>"` — `docs/goal.md`・`docs/tasks/`・`docs/notes/`・`CHANGELOG.md`・`.tri-ssd/`（git 管理外）を作る。既存ファイルは上書きしない
-2. ユーザーに目的と成功状態を聞き、`docs/goal.md` を書く（docs スキルの「Goal を書く・直すとき」）
-3. 最初に作るものの要求・構成を Docs に書き、task スキルで最初の Task を作る
+2. ユーザーに目的と成功状態を聞き、`docs/goal.md` を書く（tri-ssd-docs スキルの「Goal を書く・直すとき」）
+3. 最初に作るものの要求・構成を Docs に書き、tri-ssd-task スキルで最初の Task を作る
 
 ## 既存プロジェクトへの導入
 
@@ -63,7 +63,7 @@ Tri-SSD: Goal（docs/goal.md）・Docs（docs/ のあるべき状態）・Tasks�
 
 ## フック
 
-プラグインはフックを登録する（`hooks/hooks.json`）。Tri-SSD プロジェクト以外や Python が見つからない環境では何もしない（Skill の手順だけで全機能が使える）。
+Claude Code では、利用者の `~/.claude/settings.json` に登録したフックが動く（README の「インストール」）。Tri-SSD プロジェクト以外やフックの無いエージェントでは何もしない（Skill の手順だけで全機能が使える）。
 
 - セッション開始時: `tri status` の要約を文脈に入れる
 - `docs/` の Markdown を編集した直後: その文書への検査指摘を返す
@@ -71,12 +71,12 @@ Tri-SSD: Goal（docs/goal.md）・Docs（docs/ のあるべき状態）・Tasks�
 ## 完了後の案内
 
 - 作成・移動したファイルと `tri check` の結果
-- 次の一手: Goal の記入 → 最初の Task（task スキル）
+- 次の一手: Goal の記入 → 最初の Task（tri-ssd-task スキル）
 
 ## エラーケース
 
 | ケース | 対応 |
 |---|---|
-| `python3` が無い | `python` / `py` で同じコマンドを実行する（Python 3.9 以上） |
+| `tri` が見つからない | Tri-SSD の CLI が導入されていない。README の「インストール」（`python scripts/install.py`）をユーザーに案内する |
 | 移行で `_done/` に同名がある | 手動で名前を変えてから再実行する |
 | `docs/` が別用途（生成された API 文書等）で使われている | 生成物のディレクトリを `docs/` 外へ移すか、そのまま Docs として扱われることをユーザーに確認する |

@@ -1,6 +1,6 @@
-# Claude Code プラグイン開発 原則・推奨事項ガイド
+# Skill 開発 原則・推奨事項ガイド
 
-このドキュメントは、Tri-SSD Claude Code プラグイン開発における原則と推奨事項を定義します。
+このドキュメントは、Tri-SSD の Skill（Claude Code・Codex・Pi・OpenCode が共有する Agent Skills）開発における原則と推奨事項を定義します。
 スキル定義の必須規約は `.claude/rules/skill-development.md`（skills/ 編集時に自動注入）が正です。本ガイドはその背景と設計パターンを補足します。
 
 ---
@@ -41,9 +41,10 @@
 
 - 同じ規約・テンプレート・ロジックを複数スキルに複製しない
 - 置き場・寿命の判断規約 → `docs/knowledge-model.md` が正
-- ID採番・整合性検証 → プラグインルート `scripts/` が正（各スキルからは `${CLAUDE_SKILL_DIR}/../../scripts/` で参照）
-  - パス変数は `${CLAUDE_SKILL_DIR}` を使う（skills 公式の置換変数。プラグインは全体がキャッシュへコピーされるため内部の相対参照は壊れない）
-  - フック（`hooks/hooks.json`）のコマンドでは `${CLAUDE_PLUGIN_ROOT}` を使う
+- ID採番・整合性検証 → CLI（`scripts/tri.py`）が正（各スキルからは PATH 上の `tri` で呼ぶ）
+  - Skill は `scripts/install.py` で `~/.agents/skills` などへ写して配る。特定のエージェントの置換変数やフォルダの形に依存しない
+  - Skill が参照する規約（`docs/knowledge-model.md`・`docs/writing-rules.md`）は CLI と一緒に配られ、`tri guide <名前>` で読む
+  - Claude Code のフックは利用者の `~/.claude/settings.json` に `tri ... --hook` として登録する（登録例は README）
 - 索引・ナビ・リンクは複製してよい（正規の事実そのものは複製しない）
 
 ---
@@ -56,8 +57,8 @@
 
 ```markdown
 ---
-description: 何をするか（三人称・1〜2文）
-when_to_use: いつ使うか。「〜したい」等の自然な発火フレーズを列挙
+name: tri-ssd-<名前>
+description: 何をするか（三人称・1〜2文）。続けて、いつ使うか（「〜したい」等の自然な発火フレーズ）を列挙
 argument-hint: "[引数] - 説明"
 allowed-tools: Read, Write, Edit, Glob, Grep
 ---
@@ -82,9 +83,9 @@ allowed-tools: Read, Write, Edit, Glob, Grep
 
 ### 2.2 フロントマターの注意点
 
-- `description` + `when_to_use` は合計**1,536文字以内**（超過分はトランケートされ発火精度が落ちる）
+- `description` は**1,024文字以内**（Agent Skills の上限）。発火語も `description` に書く（`when_to_use` は Claude Code しか読まない）
 - `allowed-tools` は「制限」ではなく「事前承認」。確実に使うツールのみ列挙
-- スキル呼び出し名は**ディレクトリ名**で決まる（`name` は原則書かない）
+- `name` はフォルダ名と同じ `tri-ssd-<名前>`（共有の Skill フォルダは名前空間を持たないので接頭辞で衝突を避ける）
 
 ### 2.3 スクリプト同梱の作法
 
@@ -127,7 +128,7 @@ allowed-tools: Read, Write, Edit, Glob, Grep
 **良い例:**
 ```
 ❌ docs/goal.md が見つかりません。
-   先に setup スキル（tri init）を実行してください。
+   先に tri-ssd-setup スキル（tri init）を実行してください。
 ```
 
 **避けるべき例:**
@@ -145,13 +146,13 @@ allowed-tools: Read, Write, Edit, Glob, Grep
 
 ### スキル作成・変更時
 
-- [ ] `description` + `when_to_use` があり、合計1,536文字以内
+- [ ] `name` がフォルダ名と同じで、`description` が1,024文字以内
 - [ ] `<tri_ssd_context>`（規定文面）と `<avoid_over_engineering>` ブロックがある
 - [ ] 出力フォーマットが明確に定義されている
 - [ ] 完了後の案内がある
 - [ ] 本文が500行未満
 - [ ] 置き場の規約・採番ロジックを複製していない（knowledge-model.md / CLI を参照している）
-- [ ] スキルが使う `tri` のサブコマンドが実在する（`tests/test_plugin.py`）
+- [ ] スキルが使う `tri` のサブコマンドが実在する（`tests/test_skills.py`）
 - [ ] 説明文を変えたら発火評価、手順を変えたら成果の評価を回した（[Skill の評価](skill-evaluation.md)）
 
 ### リリース前
@@ -159,7 +160,8 @@ allowed-tools: Read, Write, Edit, Glob, Grep
 - [ ] 全スキルが単一責任を持つ
 - [ ] エラーメッセージが明確
 - [ ] ドキュメントが最新
-- [ ] `CHANGELOG.md` / `plugin.json` / `marketplace.json` のバージョンが同期している
+- [ ] `CHANGELOG.md` / `plugin.json` のバージョンが同期している
+- [ ] `python scripts/install.py` で導入し直し、`tri status` が動く
 
 ---
 

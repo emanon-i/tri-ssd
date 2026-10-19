@@ -47,7 +47,7 @@ git 管理外のローカル領域に個人の引き継ぎを置ける。
 
 ## REQ-0010 エージェントを選ばない導入
 
-Claude Code・Codex・Pi・OpenCode が、1つの正本から導入した同じ Skill と同じ CLI `tri` を使える。（計画: T-0017）
+Claude Code・Codex・Pi・OpenCode が、1つの正本から導入した同じ Skill と同じ CLI `tri` を使える。
 
 - 導入は1回のコマンドで行い、Skill と CLI は同じ版がそろう。再実行すると同じ状態に収束する
 - エージェントごとのプラグイン・拡張としての導入を必要としない

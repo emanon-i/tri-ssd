@@ -68,7 +68,7 @@ def untracked_reqs(p: Project) -> list[str]:
     return sorted(i for i in p.defs if i.startswith("REQ-") and i not in referenced)
 
 
-def status(p: Project, script: str, hook: bool = False) -> str:
+def status(p: Project, hook: bool = False) -> str:
     from .check import run as run_check
     out = []
     goal = p.docs.get(GOAL)
@@ -101,7 +101,7 @@ def status(p: Project, script: str, hook: bool = False) -> str:
         for k, *_ in mk:
             c[k] = c.get(k, 0) + 1
         out.append("差分マーカー: " + " / ".join(f"{k} {v}" for k, v in c.items()) + "（tri gaps で一覧）")
-    out.append(f"CLI: python3 {script} <command>（context <Task-ID> --emit で作業に必要な文脈を取得）")
+    out.append("CLI: tri <command>（context <Task-ID> --emit で作業に必要な文脈を取得）")
     return "\n".join(out)
 
 
