@@ -6,6 +6,10 @@ Tri-SSD (Tri-Layer Slice Spec Driven) フレームワークの変更履歴です
 
 ## [Unreleased]
 
+### Fixed
+
+- Windows（cp932）で `handoff -` に日本語を渡すと落ちる不具合を直した。標準入力も UTF-8 で読み、git と検証コマンドの出力も UTF-8 で読む（読めないバイトは置き換える）。フックの JSON の日本語のパスも正しく読む。migrate の報告のパス区切りを / にそろえた（T-0016）
+
 ## [6.0.2] - 2026-10-17
 
 評価の手法を skill-creator・Anthropic の評価ガイドに合わせて測り直した（docs/skill-evaluation.md）。

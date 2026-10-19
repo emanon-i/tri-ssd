@@ -232,7 +232,7 @@ def tasks(p: Project) -> list[Issue]:
 
 def _git(p: Project, *args: str) -> str | None:
     try:
-        r = subprocess.run(["git", *args], cwd=p.root, capture_output=True, text=True, timeout=60)
+        r = subprocess.run(["git", *args], cwd=p.root, capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=60)
     except (OSError, subprocess.TimeoutExpired):
         return None
     return r.stdout if r.returncode == 0 else None

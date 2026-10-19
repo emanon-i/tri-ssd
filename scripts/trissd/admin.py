@@ -195,11 +195,11 @@ def migrate(root: Path, apply: bool = False) -> list[str]:
     report = []
     for op, src, dst in plan:
         if op == "move":
-            report.append(f"移動: {src.relative_to(root)} → {dst.relative_to(root)}")
+            report.append(f"移動: {src.relative_to(root).as_posix()} → {dst.relative_to(root).as_posix()}")
         elif op == "delete":
-            report.append(f"削除: {src.relative_to(root)}（旧在り処マップ）")
+            report.append(f"削除: {src.relative_to(root).as_posix()}（旧在り処マップ）")
         else:
-            report.append(f"Task 化: {src.relative_to(root)} → docs/tasks/（status 変換・完了済みは _done/）")
+            report.append(f"Task 化: {src.relative_to(root).as_posix()} → docs/tasks/（status 変換・完了済みは _done/）")
     report.append("書き換え: パス参照（l1_requirements→goal.md 等）・旧マーカー（TODO: 要確認→（未確定）、（未確認…）→（未検証））")
     if not apply:
         return ["（ドライラン。--apply で実行）"] + report

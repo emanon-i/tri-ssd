@@ -215,7 +215,7 @@ class Project:
         try:
             r = subprocess.run(["git", "grep", "-I", "-o", "-E", r"\b(REQ|T|PH|F)-[0-9]{4}\b", "--", ".",
                                 ":(exclude)docs", ":(exclude)*.md", ":(exclude).tri-ssd"],
-                               cwd=self.root, capture_output=True, text=True, timeout=30)
+                               cwd=self.root, capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=30)
         except (OSError, subprocess.TimeoutExpired):
             return self._code_ids
         for line in r.stdout.splitlines():

@@ -29,9 +29,9 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 if hasattr(signal, "SIGPIPE"):
     signal.signal(signal.SIGPIPE, signal.SIG_DFL)  # head 等へのパイプで BrokenPipeError を出さない
-if hasattr(sys.stdout, "reconfigure"):
-    sys.stdout.reconfigure(encoding="utf-8")
-    sys.stderr.reconfigure(encoding="utf-8")
+for _stream in (sys.stdin, sys.stdout, sys.stderr):  # Windows の既定（cp932）ではなく UTF-8 で読み書きする
+    if hasattr(_stream, "reconfigure"):
+        _stream.reconfigure(encoding="utf-8")
 
 from trissd import admin, check, md, notes, resolve, tasks  # noqa: E402
 from trissd.project import Project  # noqa: E402
@@ -140,7 +140,7 @@ def _grouped(p: Project, items) -> list[str]:
 
 def _git_changes(root: Path, base: str) -> tuple[list[str], dict[str, set[int]]]:
     def git(*args):
-        r = subprocess.run(["git", *args], cwd=root, capture_output=True, text=True)
+        r = subprocess.run(["git", *args], cwd=root, capture_output=True, text=True, encoding="utf-8", errors="replace")
         if r.returncode != 0:
             raise SystemExit(f"error: git {' '.join(args)}: {r.stderr.strip()}")
         return r.stdout

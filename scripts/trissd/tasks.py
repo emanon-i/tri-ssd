@@ -148,10 +148,10 @@ def fingerprint(root: Path) -> str | None:
             add = subprocess.run(
                 ["git", "add", "-A", "--", ".", ":(exclude)docs", ":(exclude).tri-ssd", ":(exclude)CHANGELOG.md",
                  *ARTIFACT_EXCLUDES],
-                cwd=root, env=env, capture_output=True, text=True, timeout=120)
+                cwd=root, env=env, capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=120)
             if add.returncode != 0:
                 return None
-            tree = subprocess.run(["git", "write-tree"], cwd=root, env=env, capture_output=True, text=True, timeout=60)
+            tree = subprocess.run(["git", "write-tree"], cwd=root, env=env, capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=60)
         except (OSError, subprocess.TimeoutExpired):
             return None
         return tree.stdout.strip()[:12] if tree.returncode == 0 else None
@@ -252,7 +252,7 @@ def new(p: Project, title: str, refs: list[str], code: list[str], goal: str = ""
 
 def _git_head(root: Path) -> str | None:
     try:
-        r = subprocess.run(["git", "rev-parse", "HEAD"], cwd=root, capture_output=True, text=True, timeout=30)
+        r = subprocess.run(["git", "rev-parse", "HEAD"], cwd=root, capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=30)
     except (OSError, subprocess.TimeoutExpired):
         return None
     return r.stdout.strip()[:12] if r.returncode == 0 else None
@@ -304,7 +304,7 @@ def verify(p: Project, id_: str, only: list[str] | None = None, timeout: int = 9
         ok, detail = True, ""
         for cmd in ac.commands:
             try:
-                r = subprocess.run(cmd, shell=True, cwd=p.root, capture_output=True, text=True, timeout=timeout)
+                r = subprocess.run(cmd, shell=True, cwd=p.root, capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=timeout)
                 out = (r.stdout + "\n" + r.stderr).strip().splitlines()
                 last = next((x.strip() for x in reversed(out) if x.strip()), "")
                 detail = f"`{cmd}` → exit {r.returncode}" + (f" 「{last[:100]}」" if last else "")
@@ -445,7 +445,7 @@ def changed_paths(root: Path, base: str | None) -> list[str]:
     out = []
     for args in (["diff", "--name-only", base, "--"], ["ls-files", "-o", "--exclude-standard"]):
         try:
-            r = subprocess.run(["git", *args], cwd=root, capture_output=True, text=True, timeout=60)
+            r = subprocess.run(["git", *args], cwd=root, capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=60)
         except (OSError, subprocess.TimeoutExpired):
             return []
         if r.returncode == 0:

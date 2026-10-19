@@ -104,7 +104,7 @@ class Sim:
                    f"\n### {name}\n\n{req} を実現する。（計画: {task}）\n{design_text} 実装は `src/{name}.py`。\n")
         tpath = next(self.path("docs/tasks").glob(f"{task}*.md")).relative_to(self.root).as_posix()
         t = self.read(tpath).replace("<!-- 観測可能な振る舞い1つ -->", f"{name} が動く")
-        t = t.replace("<!-- `実行するコマンド` または 手動: 確認方法 -->", f"`python3 src/{name}.py`")
+        t = t.replace("<!-- `実行するコマンド` または 手動: 確認方法 -->", f"`\"{Path(sys.executable).as_posix()}\" src/{name}.py`")
         self.write(tpath, t)
         # 9a. 作業中の発見をノートへ
         memo = f"- {name}: 標準入力が空のとき例外になる。空なら何もしないのが妥当"
