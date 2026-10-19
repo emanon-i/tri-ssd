@@ -5,7 +5,7 @@ tags: [outcome, dev, task, trigger-positive]
 plugins: ["../.."]
 expected_outcome: >-
   task スキルが発火し、tri context で必要な節を取り、AC1 のテストを AND 条件を確かめるものにして検証し、
-  計画マーカーを外して task close で _done/ に移す。既存の _done/ は書き換えず、判断と作業メモは Task 内に残す。
+  計画マーカーを外して task close で tasks/archive/ に移す。既存の tasks/archive/ は書き換えず、判断と作業メモは Task 内に残す。
 context:
   scaffold_script: fixture.sh
 execution:
@@ -29,12 +29,12 @@ graders:
     arm: with-only
   - name: closed
     type: regex
-    target: { source: file, path: docs/tasks/_done/T-0005-tag-search.md }
+    target: { source: file, path: tasks/archive/T-0005-tag-search.md }
     pattern: '^status: done'
     flags: m
   - name: evidence-recorded
     type: regex
-    target: { source: file, path: docs/tasks/_done/T-0005-tag-search.md }
+    target: { source: file, path: tasks/archive/T-0005-tag-search.md }
     pattern: 'AC1 PASS[\s\S]*AC2 PASS|AC2 PASS[\s\S]*AC1 PASS'
   - name: plan-marker-removed
     type: regex
@@ -44,7 +44,7 @@ graders:
   - name: done-untouched
     # T-0003 は同じテスト（tests.test_search）を検証に使う完了済み Task。テストを変えても書き換えないのが正しい
     type: regex
-    target: { source: file, path: docs/tasks/_done/T-0003-fulltext.md }
+    target: { source: file, path: tasks/archive/T-0003-fulltext.md }
     pattern: '^---\nid: T-0003\nstatus: done\nrefs: \[REQ-0003\]\nclosed: 2026-09-01\n---\n# T-0003 全文検索\n\n## 受け入れ条件\n\n- \[x\] AC1: 日本語の部分一致で見つかる\n  - 検証: `python3 -m unittest tests.test_search`\n\n## 検証記録\n\n- 2026-09-01 10:00 AC1 PASS `python3 -m unittest tests.test_search` → exit 0 「OK」 tree=none\n$'
   - name: no-scattered-notes
     type: file_exists
@@ -59,7 +59,7 @@ graders:
       FAIL: テストが何も assert しない（pass だけ等）、または AND の絞り込みを確かめていない。
   - name: decision-in-task
     type: llm
-    focus: { source: file, path: docs/tasks/_done/T-0005-tag-search.md }
+    focus: { source: file, path: tasks/archive/T-0005-tag-search.md }
     criteria: |
       PASS: Task ファイルの中（「## メモ」「## 判断」など）に、補完の並び順を use_count 列ではなく毎回の集計で
       実現したという判断か、それに関する作業中の発見が書かれている。

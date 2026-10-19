@@ -41,7 +41,7 @@ graders:
     path: docs/goal.md
   - name: tasks-created
     type: file_exists
-    path: 'docs/tasks/**/*.md'
+    path: 'tasks/**/*.md'
   - name: changelog-recorded
     type: regex
     target: { source: file, path: CHANGELOG.md }

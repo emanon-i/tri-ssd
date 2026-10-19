@@ -1,6 +1,6 @@
 ---
 name: tri-ssd-task
-description: Tri-SSD プロジェクト（docs/goal.md がある）で開発作業を進める。作業開始時に現在位置と Task に必要な文脈だけを CLI で取得し、仕様と実装の差分を Task にし、受け入れ条件を検証証跡付きで満たして完了させる。作業メモと次のセッションへの引き継ぎも扱う。 実装して・続きをやって・次は何をする？・T-0003 をやって・このバグを直して・この仕様を実装して・Task を作って・検証して・完了にして・作業を再開して・メモしておいて・引き継ぎを書いて・今日はここまで、と言われたとき。Tri-SSD のプロジェクトでコードを変更する作業全般。英語では implement / continue / next task / fix this / close the task。文書の改訂や、仕様の値・方針を変えたい依頼は tri-ssd-docs（実装も要るなら tri-ssd-docs の手順が Task を作る）、導入・移行は tri-ssd-setup を使う。docs/goal.md の無いリポジトリでの作業には使わない。
+description: Tri-SSD プロジェクト（docs/goal.md がある）で開発作業を進める。作業開始時に現在位置と Task に必要な文脈だけを CLI で取得し、仕様と実装の差分を Task にし、受け入れ条件を検証証跡付きで満たして完了させる。作業メモと次のセッションへの引き継ぎ（NOTES.md）も扱う。 実装して・続きをやって・次は何をする？・T-0003 をやって・このバグを直して・この仕様を実装して・Task を作って・検証して・完了にして・作業を再開して・メモしておいて・引き継ぎを書いて・今日はここまで、と言われたとき。Tri-SSD のプロジェクトでコードを変更する作業全般。英語では implement / continue / next task / fix this / close the task。文書の改訂や、仕様の値・方針を変えたい依頼は tri-ssd-docs（実装も要るなら tri-ssd-docs の手順が Task を作る）、導入・移行は tri-ssd-setup を使う。docs/goal.md の無いリポジトリでの作業には使わない。
 argument-hint: "[T-xxxx | 作業内容] - 対象 Task または依頼内容（省略時は現在位置から選ぶ）"
 allowed-tools: Read, Edit, Write, Glob, Grep, Bash
 ---
@@ -8,7 +8,7 @@ allowed-tools: Read, Edit, Write, Glob, Grep, Bash
 # Task を進める
 
 <tri_ssd_context>
-Tri-SSD: Goal（docs/goal.md）・Docs（docs/ のあるべき状態）・Tasks（docs/tasks/ 差分を解消する検証可能な作業。作業メモも Task の中）・引き継ぎ（docs/notes/handoff.md）・CHANGELOG（意味のある変更の履歴）。常に守る規則はエージェントが常に読む指示ファイル（CLAUDE.md・AGENTS.md）に置く。
+Tri-SSD: Goal（docs/goal.md）・Docs（docs/ のあるべき状態）・Tasks（tasks/ 差分を解消する検証可能な作業。作業メモも Task の中）・NOTES（NOTES.md 現在位置・次にやること・未決事項）・CHANGELOG（意味のある変更の履歴）。常に守る規則はエージェントが常に読む指示ファイル（CLAUDE.md・AGENTS.md）に置く。
 決定的処理は PATH 上の CLI `tri` で行う。`tri` はカレントディレクトリをプロジェクトとして扱うので、プロジェクトのルートで実行する（Tri-SSD の導入先へ cd しない）。文書を開く前に `tri context` で必要なセクションだけを取得する。
 置き場・寿命の判断に迷ったら `tri guide knowledge-model` の出力を読むこと。
 </tri_ssd_context>
@@ -27,17 +27,17 @@ Tri-SSD: Goal（docs/goal.md）・Docs（docs/ のあるべき状態）・Tasks�
 セッション開始時のフックが状況を注入していればそれを使う。無ければ:
 
 ```bash
-tri status      # Goal・進行中 Task と AC 進捗・引き継ぎ・検査結果
+tri status      # Goal・進行中 Task と AC 進捗・NOTES・検査結果
 ```
 
-対象 Task の決め方: ユーザーが指定 → それ（引き継ぎの順番より優先。他の active はそのままでよい）。無ければ `active` → 引き継ぎが示す Task → `open` の若い番号。
+対象 Task の決め方: ユーザーが指定 → それ（NOTES の順番より優先。他の active はそのままでよい）。無ければ `active` → NOTES が示す Task → `open` の若い番号。
 該当が無く依頼内容があるときは手順 3 で Task を作る。
 
 ### 2. 文脈を取得する
 
 ```bash
 tri task start T-xxxx           # open → active
-tri context T-xxxx --emit       # Task 全文・Goal・参照先の仕様・引き継ぎの本文
+tri context T-xxxx --emit       # Task 全文・Goal・参照先の仕様・NOTES の本文
 ```
 
 - 出力の「選定」と本文を読んで作業を始める。「予算外で省略」「関連の弱い候補」は、Task の目的に関係しそうなものだけ Read する
@@ -59,7 +59,7 @@ context に含まれなかったが作業に必要だった Docs の節やコー
 |---|---|
 | Docs が正しく、コードが未達 | Task を作り、Docs の該当記述に `（計画: T-nnnn）` を付ける |
 | Docs が誤り | tri-ssd-docs スキルの手順で Docs を直す |
-| 設計が未確定 / 意図的に後回し / 前提が未検証 | Docs に `（未確定）` / `（保留）` / `（未検証）` を付ける。必要なら判断材料を Task の `## メモ` か引き継ぎに残す |
+| 設計が未確定 / 意図的に後回し / 前提が未検証 | Docs に `（未確定）` / `（保留）` / `（未検証）` を付ける。必要なら判断材料を Task の `## メモ` か NOTES に残す |
 
 ```bash
 tri task new "Tag search" --refs REQ-0004 docs/search.md#タグ検索 --code src/search/ --goal "完了時に成立している状態"
@@ -119,19 +119,19 @@ tri task close T-xxxx
 - ゲート未達の項目が表示されたら解消して再実行する。`--force "理由"` はユーザーが了承したときだけ使う
 - 利用者に見える機能の追加・修正、または仕様・設計の意味のある変更があれば `tri log Added|Changed|Fixed "何を・なぜ" --refs T-xxxx`（内部の作業経過は記録しない）
 - 作業中に読む必要があったのに context に出なかった文書は、refs や仕様本文のリンクとして書き足す（次回から context に入る）
-- 完了した Task（`_done/`）は履歴。後の変更で検証コマンドが古くなっても直さない。完了済みの作業に誤りが見つかったら、`_done/` を書き換えず新しい Task にする
+- 完了した Task（`tasks/archive/`）は履歴。後の変更で検証コマンドが古くなっても直さない。完了済みの作業に誤りが見つかったら、`tasks/archive/` を書き換えず新しい Task にする
 
 ### 8. 中断・セッション終了
 
 ```bash
-tri handoff - <<'EOF'
+tri notes - <<'EOF'
 - 現在位置: T-0005 の AC1 PASS、AC2 未着手
-- 次の一手: AC2（補完の並び順）
-- 未解決: use_count 列を足すかユーザー判断待ち
+- 次にやること: AC2（補完の並び順）
+- 未決事項: use_count 列を足すかユーザー判断待ち
 EOF
 ```
 
-上書きされる（過去の引き継ぎは残らない）。複数行は `-` で標準入力から渡す。個人・環境固有の事情は `--local`（`.tri-ssd/handoff.md`。git 管理外）。
+`NOTES.md` は上書きされる（過去の内容は残らない）。複数行は `-` で標準入力から渡す。Task の進み具合は Task に書き、NOTES には Task をまたぐ現在位置だけを書く。
 
 ## 完了後の案内
 
@@ -143,7 +143,7 @@ EOF
 
 | ケース | 対応 |
 |---|---|
-| docs/goal.md も docs/tasks/ も無い | tri-ssd-setup スキルで初期化・導入する |
+| docs/goal.md が無い | tri-ssd-setup スキルで初期化・導入する |
 | `tri context` が終了コード 3 | 必須セクションが予算を超えた。省略一覧を読むか `--budget` を増やす |
 | `task verify` が FAIL | 実装を直して再検証する。3 回続けて同じ失敗なら原因と選択肢をユーザーに報告する |
 | ゲートが「検証後にコードが変更」 | `tri task verify` を再実行する |

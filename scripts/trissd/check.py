@@ -30,9 +30,11 @@ HISTORY_PATTERNS = [
 HISTORY_RE = re.compile("|".join(HISTORY_PATTERNS), re.I)
 DATED_LINE_RE = re.compile(r"^\s*(?:[-*]\s*)?(?:\d{4}-\d{2}-\d{2}\b|\[?v\d+\.\d+)")
 HISTORY_HEADING_RE = re.compile(r"(変更履歴|改訂履歴|更新履歴|revision history)", re.I)
+# 選定理由と却下案は今も成り立つ説明なので、却下した案（古い配置・使わないパス）に触れても検査しない
+RATIONALE_HEADING_RE = re.compile(r"(選定理由|却下案|rationale|alternatives)", re.I)
 STRIKE_RE = re.compile(r"~~[^~\n]+~~")
 OK_MARK = "tri:ok"
-MANAGED = ("docs/tasks/", "docs/notes/", ".tri-ssd/")
+MANAGED = ("tasks/",)
 
 
 @dataclass
@@ -93,7 +95,10 @@ def refs(p: Project) -> list[Issue]:
     for doc in p.docs.values():
         if doc.kind not in ("goal", "doc"):
             continue
+        rationale = rationale_lines(doc)
         for ln, line in md.prose_lines(doc.text):
+            if ln in rationale:
+                continue
             for cp in md.code_spans(line):
                 first = cp.split("/")[0]
                 if cp.startswith(MANAGED):
@@ -107,6 +112,11 @@ def refs(p: Project) -> list[Issue]:
 def duplicate_ids(p: Project) -> list[Issue]:
     return [Issue("error", "dup-id", keys[0].split("#")[0], 0, f"{id_} が複数箇所で定義されています: {', '.join(keys)}")
             for id_, keys in sorted(p.defs.items()) if len(keys) > 1]
+
+
+def rationale_lines(doc) -> set[int]:
+    """`## 選定理由と却下案` の節（配下を含む）の行番号（0 始まり）。"""
+    return {ln for s in doc.sections[1:] if RATIONALE_HEADING_RE.search(s.title) for ln in range(s.start, s.subtree_end)}
 
 
 def hygiene(p: Project) -> list[Issue]:
@@ -126,8 +136,9 @@ def hygiene(p: Project) -> list[Issue]:
             if HISTORY_HEADING_RE.search(s.title):
                 out.append(Issue("warn", "history", doc.path, s.start + 1,
                                  f"見出し「{s.title}」: 変更履歴は CHANGELOG へ（Docs には現在の状態だけを書く）"))
+        rationale = rationale_lines(doc)
         for ln, line in md.prose_lines(doc.text):
-            if OK_MARK in raw[ln]:
+            if OK_MARK in raw[ln] or ln in rationale:
                 continue
             plain = md.strip_inline_code(line)
             m = HISTORY_RE.search(plain)
@@ -222,7 +233,7 @@ def tasks(p: Project) -> list[Issue]:
         if st not in TASK_STATUSES:
             out.append(Issue("error", "task", doc.path, 0, f"status は {'|'.join(TASK_STATUSES)} のいずれか（現在: {st or '未設定'}）"))
         if doc.kind == "task_done" and st not in ("done", "dropped", ""):
-            out.append(Issue("warn", "task", doc.path, 0, f"_done/ にあるが status: {st}"))
+            out.append(Issue("warn", "task", doc.path, 0, f"tasks/archive/ にあるが status: {st}"))
         if doc.kind == "task" and st in ("done", "dropped"):
             out.append(Issue("warn", "task", doc.path, 0, f"status: {st} なのに未アーカイブ（task close で検証・移動）"))
         if doc.kind == "task" and st in ("open", "active") and not parse_acs(doc.text):

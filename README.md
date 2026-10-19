@@ -2,7 +2,7 @@
 
 AI コーディングエージェントによる長期開発のための、知識ライフサイクル管理とコンテキスト最適化のハーネス。Claude Code・Codex・Pi・OpenCode が同じ Skill と CLI `tri` を使う。
 
-- **知識を寿命で分ける**: Goal（目的）・Docs（あるべき状態）・Tasks（差分を解消する作業。作業メモも Task の中）・引き継ぎ（上書きで1つ）・CHANGELOG（変更履歴）。溜まり続ける置き場を作らない
+- **知識を寿命で分ける**: Goal（目的）・Docs（あるべき状態）・Tasks（差分を解消する作業。作業メモも Task の中）・NOTES（現在位置。上書きで1つ）・CHANGELOG（変更履歴）。溜まり続ける置き場を作らない
 - **必要な部分だけ読む**: Task・ID・コードパスを起点に、読むべきセクションだけを知識グラフから選ぶ（理由・予算・省略の明示付き）
 - **文書を腐らせない**: 参照切れ・履歴汚染・重複・肥大化を機械的に検出し、Docs を現在形のまま保つ
 - **完了を証拠で決める**: 受け入れ条件ごとの検証証跡と、証跡取得後のコード変更検知による完了ゲート
@@ -52,7 +52,7 @@ Claude Code では、`~/.claude/settings.json` にフックを登録する（既
 
 | Skill | 使う場面 |
 |---|---|
-| `tri-ssd-task` | 実装・バグ修正・Task の作成・検証・完了・作業の再開・作業メモ・引き継ぎ |
+| `tri-ssd-task` | 実装・バグ修正・Task の作成・検証・完了・作業の再開・作業メモ・NOTES |
 | `tri-ssd-docs` | Goal・仕様・設計の作成と改訂、判断の記録 |
 | `tri-ssd-setup` | 初期化・既存プロジェクトへの導入・旧版からの移行 |
 
@@ -64,18 +64,19 @@ Skill は会話の内容から自動で選ばれる。名前を覚える必要�
 tri init --name "My App"
 ```
 
-またはエージェントに「Tri-SSD を始めたい」と伝える（tri-ssd-setup スキル）。作成されるもの:
+またはエージェントに「Tri-SSD を始めたい」と伝える（tri-ssd-setup スキル）。`init` は `docs/goal.md` と `CHANGELOG.md` を作る。ほかは最初に使うときに作られる。
 
 ```text
-docs/
+CHANGELOG.md       # 何をなぜ変えたか（Keep a Changelog）
+NOTES.md           # 現在位置・次にやること・未決事項（上書き。tri notes で書く）
+docs/              # あるべき状態の文書
   goal.md          # Goal: 目的・成功状態・原則・やらないこと（常に読まれるので短く）
-  tasks/           # Task（完了すると tasks/_done/ へ）
-  notes/handoff.md # 引き継ぎ（上書き。現在位置は常に1つ）
-CHANGELOG.md       # 意味のある変更の履歴（Keep a Changelog）
-.tri-ssd/          # 個人用の引き継ぎ（自身の .gitignore で git 管理外）
+tasks/             # Task。1 件 1 ファイル
+  archive/         # 完了・中止した Task
 ```
 
-Docs は `docs/` 配下に自由に置く（例: `requirements.md`・`architecture.md`・`api.md`・`adr/`）。分類の基準は更新契機と寿命。
+Docs は `docs/` 配下に自由に置く（例: `requirements.md`・`architecture.md`・`api.md`）。分類の基準は更新契機と寿命。判断が分かれた箇所には、その文書に `## 選定理由と却下案` の節を置く。
+Tri-SSD が読むのは `docs/`・`tasks/`・`NOTES.md`・`CHANGELOG.md` だけ。一時的な調査は git 管理外の `tmp/` などに置く。
 どの作業でも守る短い規則（例: 全クエリを利用者 ID で絞る）は、エージェントが常に読む指示ファイル（`CLAUDE.md`・`AGENTS.md`）に1規則1行で書く。
 
 ## 日常の使い方
@@ -91,7 +92,7 @@ Docs は `docs/` 配下に自由に置く（例: `requirements.md`・`architectu
 | 変更の影響 | `tri impact --git`（作業差分から見直すべき Docs と関係 Task） |
 | 検査 | `tri check [--changed]` |
 | 変更履歴 | `tri log Changed "何を・なぜ" --refs T-0003` |
-| 引き継ぎ | `tri handoff -`（標準入力から。上書き） |
+| 現在位置の記録 | `tri notes -`（標準入力から。`NOTES.md` を上書き） |
 
 `tri` はプロジェクトルートで実行する（または `--root`）。Skill が参照する規約は `tri guide knowledge-model`・`tri guide writing-rules` で読める。
 
@@ -101,7 +102,7 @@ Docs は `docs/` 配下に自由に置く（例: `requirements.md`・`architectu
 2. `task new` で差分を Task にし、受け入れ条件と `検証:` コマンドを書く
 3. `context` で必要な節だけ読んで実装し、発見は Task の `## メモ` に書く
 4. Docs を実装後の状態に置き換え（計画マーカーを外す）、`task verify` → `task close`
-5. 意味のある変更を `log`、`handoff` で引き継ぐ（メモは Task と一緒に退場する）
+5. 意味のある変更を `log`、現在位置を `notes` で残す（メモは Task と一緒に退場する）
 
 ## 既存プロジェクトへの導入
 
@@ -114,7 +115,7 @@ Docs は `docs/` 配下に自由に置く（例: `requirements.md`・`architectu
 
 ## 旧 Tri-SSD からの移行
 
-v5 以前（`docs/l1_requirements/`・`l2_foundation/`・`l3_phases/`）のプロジェクトは移行コマンドで変換する。
+v5 以前（`docs/l1_requirements/`・`l2_foundation/`・`l3_phases/`）と v6（`docs/tasks/`・`docs/notes/`・`.tri-ssd/`）のプロジェクトは移行コマンドで変換する。
 
 ```bash
 tri migrate          # ドライラン（計画の表示のみ）
@@ -126,9 +127,12 @@ tri check            # 参照切れの確認
 |---|---|
 | `l1_requirements/vision.md` | `docs/goal.md`（REQ はそのまま有効。大きければ REQ を `docs/requirements.md` へ移す） |
 | `l2_foundation/**` | `docs/design/**` |
-| `l3_phases/PH-*`（フォルダ形式は1ファイルに統合） | `docs/tasks/`（planned→open・in_progress→active・done は `_done/`） |
-| `l3_phases/_archive/**` | `docs/tasks/_done/**` |
-| `l0_ideas/**` | `docs/notes/ideas/**`（移行時に一度見直し、Task・Docs にするか削除する） |
+| `l3_phases/PH-*`（フォルダ形式は1ファイルに統合） | `tasks/`（planned→open・in_progress→active・done は `tasks/archive/`） |
+| `l3_phases/_archive/**` | `tasks/archive/**` |
+| `docs/tasks/**`（v6） | `tasks/**`（`_done/` は `archive/`） |
+| `docs/notes/handoff.md`（v6） | `NOTES.md` |
+| `l0_ideas/**`・`docs/notes/` のその他 | `tmp/` の下（Tri-SSD は読まない。移行時に一度見直し、Task・Docs にするか削除する） |
+| `.tri-ssd/`（v6） | 中身が無ければ削除。あれば残すので、`NOTES.md` へ移すか削除する |
 | `<!-- TODO: 要確認 -->`・`（未確認…）` | `（未確定）`・`（未検証）` |
 
 PH・F の ID は互換のため引き続き有効。新しい Task は `T-nnnn`。旧スキルとの対応:
@@ -155,7 +159,7 @@ claude plugin eval . --tag trigger --ablation none --scaffold --allow-tools Bash
 claude plugin eval . --tag heldout --scaffold --allow-tools Bash Write Edit                   # Skill の成果を Skill 無しと比較（有料）
 ```
 
-このリポジトリ自身も Tri-SSD で管理している（`docs/goal.md`・`docs/tasks/`）。`.claude-plugin/plugin.json` は `claude plugin eval` で Skill を束ねるためだけにあり、導入には使わない。変更履歴は [CHANGELOG.md](CHANGELOG.md)。
+このリポジトリ自身も Tri-SSD で管理している（`docs/goal.md`・`tasks/`・`NOTES.md`）。`.claude-plugin/plugin.json` は `claude plugin eval` で Skill を束ねるためだけにあり、導入には使わない。変更履歴は [CHANGELOG.md](CHANGELOG.md)。
 
 ## ライセンス
 

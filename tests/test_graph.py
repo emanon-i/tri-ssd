@@ -11,9 +11,9 @@ class ClassifyAndIndexTest(ProjectCase):
         kinds = {path: d.kind for path, d in p.docs.items()}
         self.assertEqual(kinds["docs/goal.md"], "goal")
         self.assertEqual(kinds["docs/search.md"], "doc")
-        self.assertEqual(kinds["docs/tasks/T-0005-tag-search.md"], "task")
-        self.assertEqual(kinds["docs/tasks/_done/T-0001-register.md"], "task_done")
-        self.assertEqual(kinds["docs/notes/handoff.md"], "note")
+        self.assertEqual(kinds["tasks/T-0005-tag-search.md"], "task")
+        self.assertEqual(kinds["tasks/archive/T-0001-register.md"], "task_done")
+        self.assertEqual(kinds["NOTES.md"], "note")
         self.assertEqual(kinds["CHANGELOG.md"], "changelog")
         self.assertTrue(p.docs["docs/adr/0001-sqlite-fts.md"].history_allowed)
         self.assertFalse(p.docs["docs/search.md"].history_allowed)
@@ -22,9 +22,9 @@ class ClassifyAndIndexTest(ProjectCase):
     def test_definitions(self):
         p = self.project()
         self.assertEqual(p.defs["REQ-0004"], ["docs/requirements.md#req-0004-タグ検索"])
-        self.assertEqual(p.defs["T-0005"], ["docs/tasks/T-0005-tag-search.md"])
+        self.assertEqual(p.defs["T-0005"], ["tasks/T-0005-tag-search.md"])
         self.assertIn("T-0001", p.defs)  # アーカイブ済みも定義として有効
-        self.assertNotIn("T-0006", [i for i in p.defs if p.defs[i][0].startswith("docs/notes")])
+        self.assertNotIn("T-0006", [i for i in p.defs if p.defs[i][0] == "NOTES.md"])
 
     def test_legacy_req_definition(self):
         self.write("docs/legacy.md", "# L\n\n### 古い要求\n\n- **ID**: REQ-0099\n- 背景\n")
@@ -51,12 +51,12 @@ class ContextTest(ProjectCase):
         r = resolve.context(self.project(), ["T-0005"])
         k = self.keys(r)
         for need in ("docs/requirements.md#req-0004-タグ検索", "docs/search.md#タグ検索", "docs/api.md#get-search",
-                     "docs/goal.md#原則", "docs/notes/handoff.md#引き継ぎ"):
+                     "docs/goal.md#原則", "NOTES.md#notes"):
             self.assertIn(need, k)
         for noise in ("docs/sync.md", "docs/ui.md", "docs/security.md", "docs/operations.md", "docs/glossary.md"):
             self.assertNotIn(noise, self.files(r))
         self.assertNotIn("docs/requirements.md#req-0010-アカウントと認証", k)  # 兄弟の要求は読まない
-        self.assertFalse(any(x.startswith("docs/tasks/_done") for x in self.files(r)))  # 履歴は読まない
+        self.assertFalse(any(x.startswith("tasks/archive") for x in self.files(r)))  # 履歴は読まない
         self.assertLess(r.used, r.full_tokens)
 
     def test_reasons_and_must(self):
@@ -78,10 +78,10 @@ class ContextTest(ProjectCase):
     def test_follows_dependency_change(self):
         r = resolve.context(self.project(), ["T-0007"])
         self.assertNotIn("docs/data.md#整合性", self.keys(r))
-        self.edit("docs/tasks/T-0007-trash-purge.md", "refs: [REQ-0011]", "refs: [REQ-0011, docs/data.md#整合性]")
+        self.edit("tasks/T-0007-trash-purge.md", "refs: [REQ-0011]", "refs: [REQ-0011, docs/data.md#整合性]")
         r = resolve.context(self.project(), ["T-0007"])
         self.assertIn("docs/data.md#整合性", self.keys(r))
-        self.edit("docs/tasks/T-0007-trash-purge.md", ", docs/data.md#整合性", "")
+        self.edit("tasks/T-0007-trash-purge.md", ", docs/data.md#整合性", "")
         r = resolve.context(self.project(), ["T-0007"])
         self.assertNotIn("docs/data.md#整合性", self.keys(r))
 
@@ -102,13 +102,13 @@ class ContextTest(ProjectCase):
         (self.root / "docs/search.md").rename(self.root / "docs/design/search.md")
         code, out = self.tri("check")
         self.assertIn("docs/search.md#タグ検索", out)
-        self.edit("docs/tasks/T-0005-tag-search.md", "docs/search.md#", "docs/design/search.md#")
+        self.edit("tasks/T-0005-tag-search.md", "docs/search.md#", "docs/design/search.md#")
         self.edit("docs/data.md", "(sync.md)", "(sync.md)")
         r = resolve.context(self.project(), ["T-0005"])
         self.assertIn("docs/design/search.md#タグ検索", self.keys(r))
 
     def test_keyword_fallback_for_unlinked_task(self):
-        self.write("docs/tasks/T-0008-x.md", "---\nid: T-0008\nstatus: open\n---\n# T-0008 リンク切れ確認の再試行\n\n"
+        self.write("tasks/T-0008-x.md", "---\nid: T-0008\nstatus: open\n---\n# T-0008 リンク切れ確認の再試行\n\n"
                    "## 受け入れ条件\n\n- AC1: 3 回連続失敗でリンク切れになる\n  - 検証: `true`\n")
         r = resolve.context(self.project(), ["T-0008"])
         self.assertTrue(any("キーワード" in w for w in r.warnings))
@@ -166,7 +166,7 @@ class ImpactTest(ProjectCase):
     def test_task_scope_and_uncovered(self):
         res = resolve.impact(self.project(), ["src/search/query.py", "README.txt"])
         self.assertIn("docs/search.md", res["docs"])
-        self.assertIn("docs/tasks/T-0005-tag-search.md", res["tasks"])
+        self.assertIn("tasks/T-0005-tag-search.md", res["tasks"])
         self.assertIn("README.txt", res["uncovered"])
 
     def test_git_doc_change_only_referencing_sections(self):

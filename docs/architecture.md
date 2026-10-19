@@ -14,7 +14,7 @@ flowchart LR
     CLI --> Resolve[resolve.py<br>context / impact]
     CLI --> Check[check.py<br>検査]
     CLI --> Tasks[tasks.py<br>Task・証跡・ゲート]
-    CLI --> Notes[notes.py<br>引き継ぎ]
+    CLI --> Notes[notes.py<br>NOTES.md]
     CLI --> Admin[admin.py<br>init・status・log・migrate]
     Resolve --> Project
     Check --> Project
@@ -28,7 +28,7 @@ flowchart LR
 | Markdown 解析 | frontmatter・見出し・ID・リンク・コードパス・トークン推定 | `scripts/trissd/md.py` |
 | テンプレート | Goal・Task・CHANGELOG の雛形。書式の正（CLI はこれを写すだけ） | `templates/` |
 | Hooks | Claude Code でのセッション開始時の状況注入と、Docs 編集直後の検査。利用者の `~/.claude/settings.json` に登録する（登録例は README） | `scripts/tri.py`（`--hook`） |
-| 導入 | CLI・Skill を同じ版で配る（[配布](#配布)） | `scripts/install.py` |
+| 導入 | CLI・Skill を同じ版で配る（[配布](distribution.md)） | `scripts/install.py` |
 
 Skills は [知識モデル](knowledge-model.md) と [記載規約](writing-rules.md) を `tri guide <名前>` の出力で読み、規約を複製しない。
 
@@ -84,7 +84,7 @@ ID の定義: Task は frontmatter `id`、REQ は Goal・Docs の見出しの先
 - 文書の変更: 変更行を含むセクション（`--git` は差分の行範囲から特定）を参照・リンクするセクション（0.9）
 - 上記を参照するセクションまで 1 段だけ間接的に広げる（0.6 倍）
 - 進行中 Task は別に列挙し、Docs から参照されない変更パスは対応不要の候補として示す
-- ADR など履歴を書く文書（`kind: adr|history`・`docs/adr/`）は書き換えないので対象にしない
+- 履歴を書く文書（`kind: history`）は書き換えないので対象にしない
 
 ## 検査
 
@@ -93,18 +93,18 @@ ID の定義: Task は frontmatter `id`、REQ は Goal・Docs の見出しの先
 
 | 検査 | 方法 |
 |---|---|
-| 履歴汚染 | 過去との対比・変更経緯の言い回し（日英）・日付や版で始まる行・取り消し線・変更履歴見出し。ADR・`kind: history`・Task・Note・`<!-- tri:ok -->` 行は対象外 |
+| 履歴汚染 | 過去との対比・変更経緯の言い回し（日英）・日付や版で始まる行・取り消し線・変更履歴見出し。`kind: history`・`## 選定理由と却下案` の節・Task・NOTES・`<!-- tri:ok -->` 行は対象外 |
 | 重複記述 | Goal・Docs の段落を正規化し、4-gram の Jaccard 係数 0.8 以上を重複とする |
 | 肥大化 | Goal 1500・Docs 4000 推定トークン超 |
 | 作業差分（`--changed`） | Docs 変更時の CHANGELOG 未更新・既存文書への削除の少ない大量追記・リリース済み CHANGELOG 行の削除（移動は除く） |
 
 ## 完了ゲート
 
-`task close` は REQ-0005 を実現する。以下をすべて満たすと `status: done` にして `docs/tasks/_done/` へ移す。
+`task close` は REQ-0005 を実現する。以下をすべて満たすと `status: done` にして `tasks/archive/` へ移す。
 
 1. 受け入れ条件が1つ以上ある
 2. 全 AC の検証記録が PASS（AC の状態は検証記録だけが持つ。AC 行にチェック欄は付けない）（検証記録は AC ごとに最新の結果だけを残す。完了時点の判断に要るのはそれだけ）
-3. コマンドの証跡の作業ツリー指紋が現在と一致する。指紋は `docs/`・`.tri-ssd/`・`CHANGELOG.md` を除く作業ツリーの git tree id（コミットの有無に依存しない）。手で確かめた記録は指紋で失効させない
+3. コマンドの証跡の作業ツリー指紋が現在と一致する。指紋は知識のファイル（`docs/`・`tasks/`・`NOTES.md`・`CHANGELOG.md`）を除く作業ツリーの git tree id（コミットの有無に依存しない）。手で確かめた記録は指紋で失効させない
 4. Goal・Docs にこの Task を指す `（計画: T-nnnn）` が残っていない
 5. この Task に関係する文書（Task 自身・参照先・着手後に差分のある文書）に `check` のエラーが無い。無関係な文書の誤りでは止めない。「着手後」の基準は `task start`（または最初の `task verify`）が frontmatter に記録する `base`（着手時点のコミット）
 
@@ -121,29 +121,10 @@ Claude Code のフックとして、利用者の `~/.claude/settings.json` に�
 | イベント | 処理 |
 |---|---|
 | SessionStart（startup・resume・clear・compact） | `tri status --hook`: Tri-SSD プロジェクトなら状況を出力し文脈に入れる（REQ-0007）。そうでなければ何も出さない |
-| PostToolUse（Edit・Write・MultiEdit） | `tri check --hook`: 編集した `docs/` の文書に関する指摘だけを `additionalContext` で返す |
+| PostToolUse（Edit・Write・MultiEdit） | `tri check --hook`: 編集した知識のファイル（`docs/`・`tasks/`・`NOTES.md`・`CHANGELOG.md`）に関する指摘だけを `additionalContext` で返す |
 
-フックはすべてのプロジェクトで発火する。Tri-SSD プロジェクト以外と、`tri` が見つからない環境では何もしない（Skill の手順だけで全機能が使える。フックは自動化の保険）。
+フックはすべてのプロジェクトで発火する。Tri-SSD プロジェクト（`docs/goal.md` があるフォルダ）以外と、`tri` が見つからない環境では何もしない（Skill の手順だけで全機能が使える。フックは自動化の保険）。
 フックの無いエージェント（Codex・Pi・OpenCode）は、tri-ssd-task スキルの手順 1 で `tri status` を実行して同じ状況を得る。
-
-## 配布
-
-REQ-0010 を実現する。`python scripts/install.py` が、リポジトリから CLI と Skill の写しを作る。リンクは作らない。
-
-| 置き場（オプション・既定） | 中身 |
-|---|---|
-| `--prefix`（`~/.local/share/tri-ssd`） | CLI の実行一式: `scripts/tri.py`・`scripts/trissd/`・`templates/`・`docs/knowledge-model.md`・`docs/writing-rules.md` |
-| `--bin`（`~/.local/bin`） | 起動スクリプト `tri`（sh）。Windows では `tri.cmd` も置く。どちらも導入に使った Python の絶対パスで `<prefix>/scripts/tri.py` を起動する |
-| `--skills`（`~/.agents/skills`。複数指定できる） | `tri-ssd-setup`・`tri-ssd-task`・`tri-ssd-docs`（`skills/` の写し） |
-
-- `--bin` は PATH の通ったフォルダを指定する。PATH に無ければ導入時に警告する
-- 置いたファイルの一覧を `<prefix>/install.json` に記録し、次の導入で一覧から消えたものを削除する。何度実行しても同じ状態になる
-- 起動スクリプトが Python の絶対パスを持つので、`python3` と `python` のどちらが使えるかに依存しない
-
-| エージェント | Skill を読む場所 |
-|---|---|
-| Codex・Pi・OpenCode | `~/.agents/skills` |
-| Claude Code | `~/.claude/skills`。`--skills ~/.claude/skills` でもう1つ写すか、`~/.agents/skills` へのリンクを張る（リンクは利用者の環境の管理） |
 
 ## テスト戦略
 
@@ -152,3 +133,12 @@ REQ-0010 を実現する。`python scripts/install.py` が、リポジトリか�
 - コンテキスト効率は `tests/eval_context.py` が実測する。結果は [評価](evaluation.md)
 - Skill は `claude plugin eval` で評価する。`.claude-plugin/plugin.json` は評価のために Skill を束ねるだけで、導入には使わない。Skill が呼ぶ `tri` は PATH 上のものなので、評価の前に作業ツリーを `scripts/install.py` で導入する。
   発火は `evals/trigger/` の依頼で振り分けを測り、成果は `evals/heldout-*` でプラグイン無しと比べる（有料の実エージェント実行なので CI では回さない）。結果は [Skill の評価](skill-evaluation.md)
+
+## 選定理由と却下案
+
+| 選んだこと | 理由 | 採らなかった案 |
+|---|---|---|
+| 決定的な処理を標準ライブラリだけの CLI 1 つに集める | 採番・検査・取得・完了判定は機械で確実に行え、どのエージェントからも同じ結果になる | Skill ごとに処理を書く。重複し、エージェントごとに結果がずれる |
+| Skill は 3 つ（setup・task・docs）にし、CLI の使い方と意味の判断だけを書く | 工程の順序を強制する Skill は、エージェントの能力が上がるほど価値が下がる | 生成工程ごとの Skill（v5 の 12 本）。同じ能力の重複だった |
+| フックは 2 つ（セッション開始時の状況、Docs 編集直後の検査）だけにする | 自動発火で保証できないのはこの 2 点だけ。他は Skill の手順にある | 読み込み記録・依存候補の提示のフック。手順の `impact --git` と重複していた |
+| セクション単位の知識グラフを毎回元データから導出する | 索引を手で維持すると腐る。ID・リンク・見出し・コードパスで必要な節だけを選べる | ID 参照だけのグラフ、索引ファイル・キャッシュ |

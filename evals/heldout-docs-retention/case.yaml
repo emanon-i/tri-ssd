@@ -33,7 +33,7 @@ graders:
     match: not_contains
   - name: open-task-updated
     type: regex
-    target: { source: file, path: docs/tasks/T-0007-trash-purge.md }
+    target: { source: file, path: tasks/T-0007-trash-purge.md }
     pattern: '30 日経過'
     match: not_contains
   - name: other-30-days-kept

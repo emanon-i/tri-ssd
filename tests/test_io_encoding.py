@@ -38,10 +38,10 @@ class IoEncodingTest(unittest.TestCase):
     def tearDown(self):
         self._tmp.cleanup()
 
-    def test_handoff_reads_japanese_stdin_as_utf8(self):
-        r = run("handoff", "-", root=self.root, stdin=TEXT.encode("utf-8"))
+    def test_notes_reads_japanese_stdin_as_utf8(self):
+        r = run("notes", "-", root=self.root, stdin=TEXT.encode("utf-8"))
         self.assertEqual(r.returncode, 0, r.stderr.decode("utf-8", "replace"))
-        self.assertIn(TEXT.strip(), (self.root / "docs/notes/handoff.md").read_text(encoding="utf-8"))
+        self.assertIn(TEXT.strip(), (self.root / "NOTES.md").read_text(encoding="utf-8"))
         self.assertIn("更新:", r.stdout.decode("utf-8"))
 
     def test_hook_reads_japanese_cwd_from_stdin_json(self):
@@ -52,7 +52,7 @@ class IoEncodingTest(unittest.TestCase):
 
     def test_verify_records_utf8_output_of_command(self):
         self.assertEqual(run("task", "new", "Encoding", root=self.root).returncode, 0)
-        task = next((self.root / "docs/tasks").glob("T-*.md"))
+        task = next((self.root / "tasks").glob("T-*.md"))
         py = f'"{sys.executable}"' if " " in sys.executable else sys.executable
         cmd = py + " -c \"import sys; sys.stdout.buffer.write('\\u65e5\\u672c\\u8a9e'.encode('utf-8'))\""
         text = task.read_text(encoding="utf-8")

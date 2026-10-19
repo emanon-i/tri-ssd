@@ -34,9 +34,9 @@ class CheckTest(ProjectCase):
         self.assertTrue(any("#tag-search のこと?" in m for m in msgs), msgs)
 
     def test_evidence_is_history(self):
-        self.edit("docs/tasks/T-0005-tag-search.md", "## 検証記録\n", "## 検証記録\n\n- 2026-10-01 10:00 AC2 PASS 手動: 別プロジェクトの T-0999 と同じ手順 tree=none\n")
+        self.edit("tasks/T-0005-tag-search.md", "## 検証記録\n", "## 検証記録\n\n- 2026-10-01 10:00 AC2 PASS 手動: 別プロジェクトの T-0999 と同じ手順 tree=none\n")
         self.assertEqual(self.run_check(), [])
-        self.edit("docs/tasks/T-0005-tag-search.md", "## 目的の状態\n", "## 目的の状態\n\nT-0999 に依存する。\n")
+        self.edit("tasks/T-0005-tag-search.md", "## 目的の状態\n", "## 目的の状態\n\nT-0999 に依存する。\n")
         self.assertIn(("broken-id", "error"), codes(self.run_check()))
 
     def test_frontmatter_code_and_stale_path(self):
@@ -59,7 +59,8 @@ class CheckTest(ProjectCase):
         self.assertTrue(all(i.level == "warn" for i in hist))
 
     def test_history_allowed_places(self):
-        self.write("docs/notes/n.md", "# n\n\n以前は A だった\n")
+        self.write("NOTES.md", "# NOTES\n\n以前は A だった\n")
+        self.write("docs/choice.md", "# 選択\n\n検索は B で行う。\n\n## 選定理由と却下案\n\nA は以前は速かったが件数で遅くなった。\n")
         self.write("docs/adr/0002-x.md", "# ADR\n\n当初は A を採用していた。\n")
         self.write("docs/history.md", "---\nkind: history\n---\n# 経緯\n\n当初は A。\n")
         self.assertEqual([i for i in self.run_check() if i.code == "history"], [])
@@ -83,11 +84,11 @@ class CheckTest(ProjectCase):
         self.assertIn(("marker", "warn"), codes(self.run_check(), "docs/search.md"))
 
     def test_task_format(self):
-        self.write("docs/tasks/T-0009-bad.md", "---\nid: T-0009\nstatus: doing\n---\n# T-0009 x\n")
-        got = codes(self.run_check(), "docs/tasks/T-0009-bad.md")
+        self.write("tasks/T-0009-bad.md", "---\nid: T-0009\nstatus: doing\n---\n# T-0009 x\n")
+        got = codes(self.run_check(), "tasks/T-0009-bad.md")
         self.assertIn(("task", "error"), got)
-        self.write("docs/tasks/T-0009-bad.md", "---\nid: T-0009\nstatus: open\n---\n# T-0009 x\n")
-        self.assertIn(("task", "warn"), codes(self.run_check(), "docs/tasks/T-0009-bad.md"))
+        self.write("tasks/T-0009-bad.md", "---\nid: T-0009\nstatus: open\n---\n# T-0009 x\n")
+        self.assertIn(("task", "warn"), codes(self.run_check(), "tasks/T-0009-bad.md"))
 
     def test_changed_changelog_reminder_and_growth(self):
         self.edit("docs/sync.md", "5 秒ごと", "3 秒ごと")

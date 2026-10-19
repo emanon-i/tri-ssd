@@ -14,11 +14,10 @@ from pathlib import Path
 from . import md
 
 DOCS = "docs"
-TASKS = "docs/tasks"
-DONE = "docs/tasks/_done"
-NOTES = "docs/notes"
-LOCAL = ".tri-ssd"
 GOAL = "docs/goal.md"
+TASKS = "tasks"
+DONE = "tasks/archive"
+NOTES = "NOTES.md"
 CHANGELOG = "CHANGELOG.md"
 
 TASK_STATUSES = ("open", "active", "blocked", "done", "dropped")
@@ -43,7 +42,6 @@ class Doc:
     text: str
     fm: dict
     sections: list[md.Section]
-    local: bool = False
 
     @property
     def history_allowed(self) -> bool:
@@ -68,9 +66,14 @@ def classify(rel: str) -> str:
         return "task_done"
     if rel.startswith(TASKS + "/"):
         return "task"
-    if rel.startswith(NOTES + "/"):
+    if rel == NOTES:
         return "note"
     return "doc"
+
+
+def is_knowledge(rel: str) -> bool:
+    """Tri-SSD が読む知識のファイルか（docs/・tasks/ の Markdown、NOTES.md、CHANGELOG.md）。"""
+    return rel in (NOTES, CHANGELOG) or (rel.endswith(".md") and rel.startswith((DOCS + "/", TASKS + "/")))
 
 
 class Project:
@@ -84,13 +87,14 @@ class Project:
 
     # --- 読み込み ---------------------------------------------------------------
     def _files(self):
-        for base in (DOCS,):
+        for base in (DOCS, TASKS):
             d = self.root / base
             if d.is_dir():
                 yield from sorted(p for p in d.rglob("*.md") if p.is_file())
-        cl = self.root / CHANGELOG
-        if cl.is_file():
-            yield cl
+        for name in (NOTES, CHANGELOG):
+            f = self.root / name
+            if f.is_file():
+                yield f
 
     def _load(self):
         for p in self._files():
@@ -101,7 +105,7 @@ class Project:
                 continue
             fm, body = md.parse_frontmatter(text)
             secs = md.split_sections(rel, text, body)
-            doc = Doc(rel, classify(rel), text, fm, secs, rel.startswith(LOCAL + "/"))
+            doc = Doc(rel, classify(rel), text, fm, secs)
             self.docs[rel] = doc
             for s in secs:
                 self.sections[s.key] = s
@@ -185,7 +189,7 @@ class Project:
         full = self.root / p
         if not full.exists():
             return None
-        if p.endswith(".md") and (p.startswith(DOCS + "/") or p == CHANGELOG):
+        if is_knowledge(p):
             return p
         return "code:" + (p + "/" if full.is_dir() else p)
 
@@ -207,14 +211,14 @@ class Project:
         return None
 
     def code_ids(self) -> dict[str, list[str]]:
-        """コード（docs/・Markdown 以外の git 管理ファイル）に書かれた ID → パス。`git grep` で求める。"""
+        """コード（docs/・tasks/・Markdown 以外の git 管理ファイル）に書かれた ID → パス。`git grep` で求める。"""
         if hasattr(self, "_code_ids"):
             return self._code_ids
         import subprocess
         self._code_ids: dict[str, list[str]] = {}
         try:
             r = subprocess.run(["git", "grep", "-I", "-o", "-E", r"\b(REQ|T|PH|F)-[0-9]{4}\b", "--", ".",
-                                ":(exclude)docs", ":(exclude)*.md", ":(exclude).tri-ssd"],
+                                ":(exclude)docs", ":(exclude)tasks", ":(exclude)*.md"],
                                cwd=self.root, capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=30)
         except (OSError, subprocess.TimeoutExpired):
             return self._code_ids

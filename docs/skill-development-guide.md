@@ -35,7 +35,7 @@
 - `trissd-all` - 全レイヤーを一度に生成（責任が広すぎる）
 
 **例外**: 更新トリガーが同一の処理は1スキルにまとめてよい
-（例: `task` の文脈取得・検証・完了ゲート・引き継ぎは、すべて「Task を進める」という同一の作業で発生する）。
+（例: `task` の文脈取得・検証・完了ゲート・NOTES は、すべて「Task を進める」という同一の作業で発生する）。
 
 ### 1.3 SSOT（Single Source of Truth）
 
@@ -117,7 +117,7 @@ allowed-tools: Read, Write, Edit, Glob, Grep
 
 - `PREFIX-nnnn`（REQ, T。旧形式の PH, F は互換）
 - 採番は `tri id <PREFIX>` / `tri task new`（自前実装しない）
-- 一度使った番号は再利用しない（完了 Task・引き継ぎ・CHANGELOG も走査対象）
+- 一度使った番号は再利用しない（完了 Task・NOTES・CHANGELOG も走査対象）
 
 ---
 

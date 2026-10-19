@@ -6,9 +6,10 @@ Tri-SSD (Tri-Layer Slice Spec Driven) フレームワークの変更履歴です
 
 ## [Unreleased]
 
-## [7.0.0] - 2026-10-19
+## [7.0.0] - 2026-10-20
 
-Claude Code のプラグインをやめ、Claude Code・Codex・Pi・OpenCode が同じ Skill と CLI を使う配布にした。プラグインとして入れていた場合は、プラグインを外してから README の「インストール」に従って `python scripts/install.py` とフックの登録を行う。
+Claude Code のプラグインをやめ、Claude Code・Codex・Pi・OpenCode が同じ Skill と CLI を使う配布にした。置き場を `docs/`・`tasks/`・`NOTES.md`・`CHANGELOG.md` に絞った。
+プラグインとして入れていた場合は、プラグインを外してから README の「インストール」に従って `python scripts/install.py` とフックの登録を行い、各プロジェクトで `tri migrate --apply` を実行する。
 
 ### Added
 
@@ -16,17 +17,21 @@ Claude Code のプラグインをやめ、Claude Code・Codex・Pi・OpenCode �
 
 ### Changed
 
-- 配布をプラグインから、共有 Skill と PATH 上の CLI `tri` に変えた。Claude Code・Codex・Pi・OpenCode が1つの正本から同じ版を使うため（ADR-0003）。
+- 配布をプラグインから、共有 Skill と PATH 上の CLI `tri` に変えた。Claude Code・Codex・Pi・OpenCode が1つの正本から同じ版を使うため（docs/distribution.md の選定理由）。
   Skill は `tri-ssd-setup`・`tri-ssd-task`・`tri-ssd-docs` に改名し、Agent Skills の形式（`name`・`when_to_use` を含めた `description`）にした。Skill は置換変数を使わず `tri` と `tri guide` を呼ぶ（T-0017）
+- 置き場: Task を `tasks/`（完了・中止は `tasks/archive/`）、引き継ぎを `NOTES.md` に移した。`docs/` を Goal とあるべき状態だけにし、予約領域の例外を無くすため。
+  引き継ぎのコマンドは `tri notes`。`init` は `docs/goal.md` と `CHANGELOG.md` だけを作る。`tri migrate` は v6 の配置からも移す（T-0018）
+- 判断の理由は ADR ではなく、各文書の `## 選定理由と却下案` の節に書く。理由は経緯ではなく今も成り立つ説明なので、対象の記述と同じ場所に置く。この節は履歴汚染の検査から外れる（T-0018）
 
 ### Removed
 
 - `.claude-plugin/marketplace.json` と `hooks/hooks.json`。Claude Code のフックは利用者の `~/.claude/settings.json` に `tri status --hook`・`tri check --hook` として登録する（README）。
   `plugin.json` は `claude plugin eval` で Skill を束ねるためだけに残す（T-0017）
+- `.tri-ssd/` と `tri handoff --local`（git 管理外の個人用の引き継ぎ）。一人で使う道具では使う場面が無かった。一時的な調査は git 管理外の `tmp/` などに置く（T-0018）
 
 ### Fixed
 
-- Windows（cp932）で `handoff -` に日本語を渡すと落ちる不具合を直した。標準入力も UTF-8 で読み、git と検証コマンドの出力も UTF-8 で読む（読めないバイトは置き換える）。フックの JSON の日本語のパスも正しく読む。migrate の報告のパス区切りを / にそろえた（T-0016）
+- Windows（cp932）で標準入力に日本語を渡すと落ちる不具合を直した（`tri notes -` など）。標準入力も UTF-8 で読み、git と検証コマンドの出力も UTF-8 で読む（読めないバイトは置き換える）。フックの JSON の日本語のパスも正しく読む。migrate の報告のパス区切りを / にそろえた（T-0016）
 
 ## [6.0.2] - 2026-10-17
 

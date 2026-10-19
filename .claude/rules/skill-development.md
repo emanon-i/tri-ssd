@@ -35,7 +35,7 @@ allowed-tools: Read, Write, Edit, Glob, Grep  # 事前承認するツールの�
 
 ```markdown
 <tri_ssd_context>
-Tri-SSD: Goal（docs/goal.md）・Docs（docs/ のあるべき状態）・Tasks（docs/tasks/ 差分を解消する検証可能な作業。作業メモも Task の中）・引き継ぎ（docs/notes/handoff.md）・CHANGELOG（意味のある変更の履歴）。常に守る規則はエージェントが常に読む指示ファイル（CLAUDE.md・AGENTS.md）に置く。
+Tri-SSD: Goal（docs/goal.md）・Docs（docs/ のあるべき状態）・Tasks（tasks/ 差分を解消する検証可能な作業。作業メモも Task の中）・NOTES（NOTES.md 現在位置・次にやること・未決事項）・CHANGELOG（意味のある変更の履歴）。常に守る規則はエージェントが常に読む指示ファイル（CLAUDE.md・AGENTS.md）に置く。
 決定的処理は PATH 上の CLI `tri` で行う。`tri` はカレントディレクトリをプロジェクトとして扱うので、プロジェクトのルートで実行する（Tri-SSD の導入先へ cd しない）。文書を開く前に `tri context` で必要なセクションだけを取得する。
 置き場・寿命の判断に迷ったら `tri guide knowledge-model` の出力を読むこと。
 </tri_ssd_context>

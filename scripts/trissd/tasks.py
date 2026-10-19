@@ -3,7 +3,7 @@
 完了は自己申告ではなく、受け入れ条件（AC）ごとの検証証跡で判定する:
   - AC の `検証:` 行のコマンドを実行し、結果を「検証記録」へ追記する（task verify）
   - 手動確認の AC は確認者のメモ付きで記録する（task record）
-  - 証跡には作業ツリーの指紋（docs/ を除くコードの内容ハッシュ）を残し、
+  - 証跡には作業ツリーの指紋（知識のファイルを除くコードの内容ハッシュ）を残し、
     検証後にコードが変わった証跡は古いもの（stale）として扱う
 """
 from __future__ import annotations
@@ -18,7 +18,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from . import md
-from .project import DONE, MARKER_RE, TASKS, Project
+from .project import DONE, MARKER_RE, TASKS, Project, is_knowledge
 
 AC_HEAD_RE = re.compile(r"受け入れ条件|acceptance", re.I)
 EVIDENCE_HEAD_RE = re.compile(r"検証記録|evidence", re.I)
@@ -138,7 +138,7 @@ def is_artifact(path: str) -> bool:
 
 
 def fingerprint(root: Path) -> str | None:
-    """docs/・ローカル領域・CHANGELOG を除く作業ツリーの内容ハッシュ（git の tree id）。
+    """知識のファイル（docs/・tasks/・NOTES.md・CHANGELOG.md）を除く作業ツリーの内容ハッシュ（git の tree id）。
 
     コミットの有無に依存せず、内容が同じなら同じ値になる。git 管理外なら None。
     """
@@ -146,7 +146,7 @@ def fingerprint(root: Path) -> str | None:
         env = dict(os.environ, GIT_INDEX_FILE=str(Path(tmp) / "index"))
         try:
             add = subprocess.run(
-                ["git", "add", "-A", "--", ".", ":(exclude)docs", ":(exclude).tri-ssd", ":(exclude)CHANGELOG.md",
+                ["git", "add", "-A", "--", ".", ":(exclude)docs", ":(exclude)tasks", ":(exclude)NOTES.md", ":(exclude)CHANGELOG.md",
                  *ARTIFACT_EXCLUDES],
                 cwd=root, env=env, capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=120)
             if add.returncode != 0:
@@ -450,7 +450,7 @@ def changed_paths(root: Path, base: str | None) -> list[str]:
             return []
         if r.returncode == 0:
             out += [x for x in r.stdout.splitlines() if x]
-    return sorted({x for x in out if not is_artifact(x) and not x.startswith(".tri-ssd/")})
+    return sorted({x for x in out if not is_artifact(x)})
 
 
 def relevant_docs(p: Project, doc) -> set[str]:
@@ -464,8 +464,7 @@ def relevant_docs(p: Project, doc) -> set[str]:
             dst = p.resolve(e.dst)
             if dst and not dst.startswith("code:"):
                 out.add(dst.split("#")[0])
-    out |= {x for x in changed_paths(p.root, str(doc.fm.get("base") or "") or None)
-            if x.startswith("docs/") or x == "CHANGELOG.md"}
+    out |= {x for x in changed_paths(p.root, str(doc.fm.get("base") or "") or None) if is_knowledge(x)}
     return out
 
 

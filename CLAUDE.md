@@ -7,7 +7,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 このリポジトリは **Tri-SSD の開発リポジトリ** です。Claude Code・Codex・Pi・OpenCode が使う Skill と CLI `tri` を、`scripts/install.py` で配ります。
 
 Tri-SSD は、AI エージェント駆動の長期開発で知識が陳腐化・肥大化しないよう、知識のライフサイクルとコンテキストを管理するハーネスです。
-Goal・Docs・Tasks・引き継ぎ・CHANGELOG の置き場と寿命を定め、決定的な処理（知識グラフ・関連セクションの取得・逆引き・検査・完了ゲート）を CLI で行います。
+Goal・Docs・Tasks・NOTES・CHANGELOG の置き場と寿命を定め、決定的な処理（知識グラフ・関連セクションの取得・逆引き・検査・完了ゲート）を CLI で行います。
 
 核の哲学: **管理のための管理を増やさない**。**決定的に処理できることは機械で、意味の判断はエージェントで**。
 
@@ -20,6 +20,8 @@ scripts/install.py # CLI・起動スクリプト・Skill の写しを置く導�
 scripts/trissd/  # CLI の実装（md / project / resolve / check / tasks / notes / admin）
 templates/       # Goal・Task・CHANGELOG の雛形（書式の正）
 docs/            # フレームワーク仕様（knowledge-model / writing-rules / architecture）兼、このリポジトリ自身の Tri-SSD 知識
+tasks/           # このリポジトリ自身の Task（完了・中止は tasks/archive/）
+NOTES.md         # このリポジトリ自身の現在位置・次にやること・未決事項
 tests/           # unittest・長期運用シミュレーション・コンテキスト効率の評価・フィクスチャ
 evals/           # claude plugin eval のケース（trigger/ 発火評価・heldout-* 成果の評価・dev の 5 件）
 .claude-plugin/  # plugin.json（claude plugin eval で Skill を束ねるためだけ。導入には使わない）

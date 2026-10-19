@@ -1,6 +1,6 @@
 ---
 name: tri-ssd-docs
-description: Tri-SSD プロジェクト（docs/goal.md がある）の Goal と Docs（あるべき状態を定める文書）を作成・改訂する。古い記述を残さず置き換え、意味のある変更を CHANGELOG に記録し、参照切れ・履歴汚染・重複を CLI で検査する更新プロトコルを実行する。 Tri-SSD プロジェクトで、仕様を書いて・設計を変えたい・仕様で決めた値・方式・方針を変えたい・方針が変わった・ドキュメントを更新して・ドキュメントを整理して・Goal を決めたい・要求を追加して・この判断を記録して・文書が古い・ドキュメントが肥大化している、と言われたとき。Task 完了時に Docs の見直しが必要なとき。英語では update the spec / revise docs / record decision。実装作業・作業メモ・引き継ぎは tri-ssd-task を使う。docs/goal.md の無いリポジトリの文書更新には使わない（導入を頼まれたときだけ tri-ssd-setup）。
+description: Tri-SSD プロジェクト（docs/goal.md がある）の Goal と Docs（あるべき状態を定める文書）を作成・改訂する。古い記述を残さず置き換え、意味のある変更を CHANGELOG に記録し、参照切れ・履歴汚染・重複を CLI で検査する更新プロトコルを実行する。 Tri-SSD プロジェクトで、仕様を書いて・設計を変えたい・仕様で決めた値・方式・方針を変えたい・方針が変わった・ドキュメントを更新して・ドキュメントを整理して・Goal を決めたい・要求を追加して・この判断を記録して・文書が古い・ドキュメントが肥大化している、と言われたとき。Task 完了時に Docs の見直しが必要なとき。英語では update the spec / revise docs / record decision。実装作業・作業メモ・NOTES は tri-ssd-task を使う。docs/goal.md の無いリポジトリの文書更新には使わない（導入を頼まれたときだけ tri-ssd-setup）。
 argument-hint: "[変更内容 | 対象文書] - 何をどう変えるか"
 allowed-tools: Read, Edit, Write, Glob, Grep, Bash
 ---
@@ -8,7 +8,7 @@ allowed-tools: Read, Edit, Write, Glob, Grep, Bash
 # Goal・Docs を改訂する
 
 <tri_ssd_context>
-Tri-SSD: Goal（docs/goal.md）・Docs（docs/ のあるべき状態）・Tasks（docs/tasks/ 差分を解消する検証可能な作業。作業メモも Task の中）・引き継ぎ（docs/notes/handoff.md）・CHANGELOG（意味のある変更の履歴）。常に守る規則はエージェントが常に読む指示ファイル（CLAUDE.md・AGENTS.md）に置く。
+Tri-SSD: Goal（docs/goal.md）・Docs（docs/ のあるべき状態）・Tasks（tasks/ 差分を解消する検証可能な作業。作業メモも Task の中）・NOTES（NOTES.md 現在位置・次にやること・未決事項）・CHANGELOG（意味のある変更の履歴）。常に守る規則はエージェントが常に読む指示ファイル（CLAUDE.md・AGENTS.md）に置く。
 決定的処理は PATH 上の CLI `tri` で行う。`tri` はカレントディレクトリをプロジェクトとして扱うので、プロジェクトのルートで実行する（Tri-SSD の導入先へ cd しない）。文書を開く前に `tri context` で必要なセクションだけを取得する。
 置き場・寿命の判断に迷ったら `tri guide knowledge-model` の出力を読むこと。
 </tri_ssd_context>
@@ -23,7 +23,7 @@ Tri-SSD: Goal（docs/goal.md）・Docs（docs/ のあるべき状態）・Tasks�
 
 <current_state_only>
 Docs と Goal には現在または将来のあるべき状態だけを書く。変更するときは追記せず置き換え、古い記述・重複を同じ編集で消す。
-「当初は」「以前は」「〜に変更した」「現在は〜だが」のような経緯は本文に残さず、CHANGELOG（何を・なぜ）か ADR（判断の背景）へ書く。
+「当初は」「以前は」「〜に変更した」「現在は〜だが」のような経緯は本文に残さず、CHANGELOG（何を・なぜ）へ書く。選んだ理由と採らなかった案は、その文書の `## 選定理由と却下案` の節に書く。
 </current_state_only>
 
 - **1つの事実は1箇所**: 数値・期限・名前などの値は1箇所（通常は REQ）にだけ書き、他の文書は ID で参照する（「保持期間（REQ-0011）」）

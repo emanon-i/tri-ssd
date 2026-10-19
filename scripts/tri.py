@@ -1,15 +1,15 @@
 #!/usr/bin/env python3
 """Tri-SSD CLI — 知識ライフサイクル管理とコンテキスト最適化のための決定的処理。
 
-標準ライブラリのみで動作する。プロジェクトルート（docs/ の親）で実行するか --root を指定する。
+標準ライブラリのみで動作する。プロジェクトルート（docs/goal.md のあるフォルダ）で実行するか --root を指定する。
 PATH 上の `tri`（scripts/install.py が置く起動スクリプト）から呼ぶ。
 
-    tri status                       # 現在位置（Task・引き継ぎ・健全性）
+    tri status                       # 現在位置（Task・NOTES.md・健全性）
     tri context T-0003 --emit        # Task に必要な Docs セクションだけを取得
     tri impact --git                 # 作業差分から見直すべき Docs を逆引き
     tri check [--changed]            # 参照切れ・履歴汚染・重複・肥大化の検査
     tri task new|list|verify|record|close|drop|start ...
-    tri handoff "現在位置・次の一手"     # 引き継ぎを上書き
+    tri notes "現在位置・次にやること"   # NOTES.md を上書き
     tri log Changed "..." --refs T-0003
     tri guide knowledge-model        # Skill が参照する規約を表示
     tri gaps | id T | init | migrate [--apply]
@@ -36,7 +36,7 @@ for _stream in (sys.stdin, sys.stdout, sys.stderr):  # Windows の既定（cp932
         _stream.reconfigure(encoding="utf-8")
 
 from trissd import admin, check, md, notes, resolve, tasks  # noqa: E402
-from trissd.project import Project  # noqa: E402
+from trissd.project import Project, is_knowledge  # noqa: E402
 
 GUIDES = Path(__file__).resolve().parents[1] / "docs"
 GUIDE_NAMES = ("knowledge-model", "writing-rules")
@@ -188,7 +188,7 @@ def cmd_impact(a):
         print("\n## 関係する進行中 Task")
         for t, why in res["tasks"].items():
             print(f"- {t}  ← {why}")
-    code_uncovered = [u for u in res["uncovered"] if not u.startswith("docs/") and u != "CHANGELOG.md"]
+    code_uncovered = [u for u in res["uncovered"] if not is_knowledge(u)]
     if code_uncovered:
         print("\n## Docs から参照されていない変更（記述不要なら対応不要）")
         for u in code_uncovered[:30]:
@@ -209,7 +209,7 @@ def cmd_check(a):
             target = Path(fp).resolve().relative_to(root.resolve()).as_posix()
         except ValueError:
             return 0
-        if not target.endswith(".md") or not (target.startswith("docs/") or target == "CHANGELOG.md"):
+        if not is_knowledge(target):
             return 0
     p = Project(root)
     issues = check.run(p, a.changed, focus=target if a.hook else None)
@@ -305,9 +305,9 @@ def cmd_task(a):
     return 2
 
 
-def cmd_handoff(a):
+def cmd_notes(a):
     text = sys.stdin.read() if a.text == "-" else a.text
-    print(f"更新: {notes.handoff(Project(a.root), text, a.local)}（上書き。過去の引き継ぎは残らない）")
+    print(f"更新: {notes.write(Project(a.root), text)}（上書き。過去の内容は残らない）")
     return 0
 
 
@@ -328,7 +328,7 @@ def cmd_migrate(a):
     for line in admin.migrate(Path(a.root), a.apply):
         print(f"- {line}" if not line.startswith("（") else line)
     if a.apply:
-        print("\n次: tri check で参照切れを確認し、goal.md から REQ 詳細を Docs へ分離（Goal は短く）")
+        print("\n次: tri check で参照切れを確認する。docs/goal.md が大きければ REQ の節を Docs へ移す（Goal は短く）")
     return 0
 
 
@@ -342,11 +342,11 @@ def build_parser() -> argparse.ArgumentParser:
     ap.add_argument("--root", default=os.environ.get("TRI_SSD_ROOT", "."), help="プロジェクトルート（既定: カレント）")
     sub = ap.add_subparsers(dest="cmd", required=True)
 
-    s = sub.add_parser("init", help="docs/goal.md・tasks/・notes/・CHANGELOG・.tri-ssd/ を作成（冪等）")
+    s = sub.add_parser("init", help="docs/goal.md と CHANGELOG.md を作成（冪等）")
     s.add_argument("--name")
     s.set_defaults(fn=cmd_init)
 
-    s = sub.add_parser("status", help="現在位置: Task・引き継ぎ・健全性")
+    s = sub.add_parser("status", help="現在位置: Task・NOTES.md・健全性")
     s.add_argument("--hook", action="store_true", help="SessionStart フック用（Tri-SSD でなければ何も出さない）")
     s.set_defaults(fn=cmd_status)
 
@@ -400,18 +400,17 @@ def build_parser() -> argparse.ArgumentParser:
     t.add_argument("ac")
     t.add_argument("result", choices=("pass", "fail", "PASS", "FAIL"))
     t.add_argument("--note", required=True)
-    t = ts.add_parser("close", help="完了ゲートを通過したら done にして _done/ へ")
+    t = ts.add_parser("close", help="完了ゲートを通過したら done にして tasks/archive/ へ")
     t.add_argument("id")
     t.add_argument("--force", metavar="REASON", help="ゲート未達でも理由を記録して完了")
-    t = ts.add_parser("drop", help="中止して _done/ へ")
+    t = ts.add_parser("drop", help="中止して tasks/archive/ へ")
     t.add_argument("id")
     t.add_argument("--reason", required=True)
     s.set_defaults(fn=cmd_task)
 
-    s = sub.add_parser("handoff", help="引き継ぎ（現在位置・次の一手・未解決の問い）を上書き。- で stdin")
+    s = sub.add_parser("notes", help="NOTES.md（現在位置・次にやること・未決事項）を上書き。- で stdin")
     s.add_argument("text")
-    s.add_argument("--local", action="store_true", help=".tri-ssd/（git 管理外）に書く")
-    s.set_defaults(fn=cmd_handoff)
+    s.set_defaults(fn=cmd_notes)
 
     s = sub.add_parser("log", help="CHANGELOG の [Unreleased] に追記")
     s.add_argument("type", help="Added / Changed / Deprecated / Removed / Fixed / Security")
@@ -428,7 +427,7 @@ def build_parser() -> argparse.ArgumentParser:
     s.add_argument("name", choices=GUIDE_NAMES)
     s.set_defaults(fn=cmd_guide)
 
-    s = sub.add_parser("migrate", help="旧 Tri-SSD（L0-L3）から移行（既定はドライラン）")
+    s = sub.add_parser("migrate", help="旧い配置（L0-L3・docs/tasks・docs/notes）から移行（既定はドライラン）")
     s.add_argument("--apply", action="store_true")
     s.set_defaults(fn=cmd_migrate)
 
