@@ -1,6 +1,6 @@
 ---
 name: tri-ssd-setup
-description: プロジェクトに Tri-SSD を導入する。新規プロジェクトの初期化、既存プロジェクトへの導入（既存コード・文書から Goal と最小限の Docs を起こす）、旧 Tri-SSD（L0〜L3 構成）からの移行を行う。 Tri-SSD を始めたい・導入したい・セットアップして・初期化して・既存プロジェクトに入れたい・旧バージョンの Tri-SSD から移行したい・l1_requirements や l3_phases がある、と言われたとき。英語では set up Tri-SSD / adopt / migrate from v5。導入済みのプロジェクトでの作業は tri-ssd-task・tri-ssd-docs を使う。
+description: プロジェクトに Tri-SSD を導入する。新規プロジェクトの初期化、既存プロジェクトへの導入（既存コード・文書から Goal と最小限の Docs を起こす）、旧い Tri-SSD（L0〜L3 構成、または docs/tasks・docs/notes の配置）からの移行を行う。 Tri-SSD を始めたい・導入したい・セットアップして・初期化して・既存プロジェクトに入れたい・旧バージョンの Tri-SSD から移行したい・l1_requirements や l3_phases や docs/tasks がある、と言われたとき。英語では set up Tri-SSD / adopt / migrate from an older layout。導入済みのプロジェクトでの作業は tri-ssd-task・tri-ssd-docs を使う。
 argument-hint: "[new | adopt | migrate]"
 allowed-tools: Read, Edit, Write, Glob, Grep, Bash
 ---
