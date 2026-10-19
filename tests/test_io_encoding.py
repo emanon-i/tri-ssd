@@ -1,6 +1,7 @@
 """標準入出力と子プロセス出力の文字コード: ロケールが UTF-8 でない環境（Windows の cp932 など）でも UTF-8 で扱う。
 
 CLI を別プロセスで起動し、Python の入出力の既定を UTF-8 以外にして確かめる。
+子プロセスの出力の読み方はロケールに従うので、その検査はロケールが UTF-8 でない環境（Windows）でだけ不具合を検出する。
 """
 import json
 import os
@@ -18,7 +19,7 @@ TEXT = "- 現在位置: T-0005 の AC1 PASS\n- 次の一手: 補完の並び順�
 
 def non_utf8_env() -> dict:
     env = {k: v for k, v in os.environ.items() if k not in ("PYTHONUTF8", "PYTHONIOENCODING")}
-    env.update(PYTHONIOENCODING="ascii:strict", PYTHONUTF8="0", PYTHONCOERCECLOCALE="0", LC_ALL="C")
+    env["PYTHONIOENCODING"] = "ascii:strict"  # 標準入出力だけを UTF-8 以外にする（ファイル名の文字コードは変えない）
     return env
 
 
