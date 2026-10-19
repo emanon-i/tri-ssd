@@ -22,9 +22,9 @@ graders:
     type: file_exists
     path: 'tests/**/*.py'
   - name: task-closed-with-evidence
-    # 新しい Task が作られ、完了ゲートを通って _done/ に入った
+    # 新しい Task が作られ、完了ゲートを通って tasks/archive/ に入った
     type: file_exists
-    path: 'docs/tasks/_done/*.md'
+    path: 'tasks/archive/*.md'
   - name: no-scattered-notes
     type: file_exists
     path: 'docs/notes/**'

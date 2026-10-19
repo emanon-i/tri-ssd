@@ -4,7 +4,7 @@
 エージェントの編集は決定的にスクリプト化する（同じ入力で同じ結果）:
 
   disciplined: Tri-SSD の更新プロトコルどおり（置換・マーカー除去・CHANGELOG・ノート昇格）
-  careless   : 追記で済ませる・マーカーを外さない・引き継ぎを上書きせず溜める（典型的な失敗）
+  careless   : 追記で済ませる・マーカーを外さない・NOTES.md を上書きせず溜める（典型的な失敗）
 
     python3 tests/simulate.py [--cycles 8] [--mode disciplined|careless]
 """
@@ -102,9 +102,9 @@ class Sim:
         self.tri("task", "new", f"{name} feature", "--refs", req, "--code", f"src/{name}.py")
         self.write("docs/design.md", self.read("docs/design.md") +
                    f"\n### {name}\n\n{req} を実現する。（計画: {task}）\n{design_text} 実装は `src/{name}.py`。\n")
-        tpath = next(self.path("docs/tasks").glob(f"{task}*.md")).relative_to(self.root).as_posix()
+        tpath = next(self.path("tasks").glob(f"{task}*.md")).relative_to(self.root).as_posix()
         t = self.read(tpath).replace("<!-- 観測可能な振る舞い1つ -->", f"{name} が動く")
-        t = t.replace("<!-- `実行するコマンド` または 手動: 確認方法 -->", f"`python3 src/{name}.py`")
+        t = t.replace("<!-- `実行するコマンド` または 手動: 確認方法 -->", f"`\"{Path(sys.executable).as_posix()}\" src/{name}.py`")
         self.write(tpath, t)
         # 9a. 作業中の発見をノートへ
         memo = f"- {name}: 標準入力が空のとき例外になる。空なら何もしないのが妥当"
@@ -140,13 +140,13 @@ class Sim:
             raise AssertionError(out)
         if self.mode == "disciplined":
             self.tri("log", "Added", req_text, "--refs", task)
-        # 8. 次の Task を追加（次サイクルの前触れ）＋ 10. 引き継ぎ
+        # 8. 次の Task を追加（次サイクルの前触れ）＋ 10. NOTES.md
         if self.mode == "disciplined":
-            self.tri("handoff", f"{task} 完了。次は {FEATURES[(i + 1) % len(FEATURES)][0]} の要求定義から")
+            self.tri("notes", f"{task} 完了。次は {FEATURES[(i + 1) % len(FEATURES)][0]} の要求定義から")
         else:
-            hf = self.path("docs/notes/handoff.md")  # 上書きせず追記で溜める
-            old = hf.read_text(encoding="utf-8") if hf.exists() else "# 引き継ぎ\n"
-            self.write("docs/notes/handoff.md", old + f"\n- {task} 完了。次は {FEATURES[(i + 1) % len(FEATURES)][0]}\n")
+            hf = self.path("NOTES.md")  # 上書きせず追記で溜める
+            old = hf.read_text(encoding="utf-8") if hf.exists() else "# NOTES\n"
+            self.write("NOTES.md", old + f"\n- {task} 完了。次は {FEATURES[(i + 1) % len(FEATURES)][0]}\n")
         self.git("add", "-A")
         self.git("commit", "-qm", f"cycle {i}")
 
@@ -155,13 +155,13 @@ class Sim:
         p = Project(self.root)
         issues = check.run(p)
         docs_tokens = sum(md.estimate_tokens(d.text) for d in p.docs.values() if d.kind in ("goal", "doc"))
-        # 一時情報の総量: Notes（引き継ぎ等）と、進行中 Task の `## メモ`
+        # 一時情報の総量: NOTES.mdと、進行中 Task の `## メモ`
         notes_tokens = sum(md.estimate_tokens(d.text) for d in p.docs.values() if d.kind == "note")
         for d in p.task_docs():
             rng = _section_range(d.text, re.compile("^メモ"))
             if rng:
                 notes_tokens += md.estimate_tokens("\n".join(d.text.splitlines()[rng[0]:rng[1]]))
-        handoffs = len(notes.read_handoff(p))
+        notes_files = int(notes.read(p) is not None)
         # 10. 新しいセッション: status → 進行中 Task の文脈取得
         last = FEATURES[i % len(FEATURES)][0] + str(i // len(FEATURES) or "")
         self.tri("task", "new", "next feature", "--refs", f"REQ-{i + 1:04d}", "--code", f"src/{last}.py")
@@ -170,7 +170,7 @@ class Sim:
         t0 = time.perf_counter()
         r = resolve.context(p2, [tid])
         ms = (time.perf_counter() - t0) * 1000
-        status_ok = "引き継ぎ" in self.tri("status")[1] if self.mode == "disciplined" else None
+        status_ok = "NOTES.md:" in self.tri("status")[1] if self.mode == "disciplined" else None
         self.tri("task", "drop", tid, "--reason", "計測用")
         self.git("add", "-A")
         self.git("commit", "-qm", f"measure {i}")
@@ -183,10 +183,10 @@ class Sim:
             "broken": sum(1 for x in issues if x.code.startswith("broken")),
             "docs_tokens": docs_tokens,
             "notes_tokens": notes_tokens,
-            "handoff_files": handoffs,
+            "notes_files": notes_files,
             "context_tokens": r.used,
             "context_ms": round(ms, 1),
-            "status_has_handoff": status_ok,
+            "status_has_notes": status_ok,
             "old_storage_text": "JSON ファイル" in self.read("docs/design.md"),
         }
 

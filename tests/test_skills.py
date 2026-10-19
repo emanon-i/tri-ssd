@@ -1,4 +1,4 @@
-"""プラグインとしての契約: Skill の書式・CLI 参照の実在・フック・版番号・README。"""
+"""配布物としての契約: Skill の書式（Agent Skills）・参照の実在・フックの登録例・版番号・README。"""
 import argparse
 import json
 import re
@@ -24,17 +24,17 @@ def subcommands(parser: argparse.ArgumentParser) -> dict[str, set[str]]:
 
 class SkillTest(unittest.TestCase):
     def test_skill_set(self):
-        self.assertEqual([p.parent.name for p in SKILLS], ["docs", "setup", "task"])
+        self.assertEqual([p.parent.name for p in SKILLS], ["tri-ssd-docs", "tri-ssd-setup", "tri-ssd-task"])
 
     def test_frontmatter_and_size(self):
         for path in SKILLS:
             text = path.read_text(encoding="utf-8")
             fm, start = md.parse_frontmatter(text)
             with self.subTest(skill=path.parent.name):
+                self.assertEqual(fm.get("name"), path.parent.name)
                 self.assertTrue(fm.get("description"))
-                self.assertTrue(fm.get("when_to_use"))
-                self.assertLessEqual(len(fm["description"]) + len(fm["when_to_use"]), 1536)
-                self.assertNotIn("name", fm)
+                self.assertLessEqual(len(fm["description"]), 1024)
+                self.assertNotIn("when_to_use", fm)
                 self.assertLess(len(text.splitlines()) - start, 500)
                 self.assertIn("## 完了後の案内", text)
 
@@ -44,11 +44,15 @@ class SkillTest(unittest.TestCase):
         self.assertEqual(len(blocks), 1)
         self.assertIn("avoid_over_engineering", SKILLS[0].read_text(encoding="utf-8"))
 
-    def test_referenced_files_exist(self):
+    def test_references_resolve_without_agent_specific_paths(self):
         for path in SKILLS:
-            for ref in re.findall(r"\$\{CLAUDE_SKILL_DIR\}/([^\s`\"]+)", path.read_text(encoding="utf-8")):
-                with self.subTest(skill=path.parent.name, ref=ref):
-                    self.assertTrue((path.parent / ref).resolve().exists())
+            text = path.read_text(encoding="utf-8")
+            with self.subTest(skill=path.parent.name):
+                self.assertNotRegex(text, r"\$\{\w+\}|scripts/tri\.py")
+                for ref in re.findall(r"`(references/[^`]+)`", text):
+                    self.assertTrue((path.parent / ref).exists(), ref)
+                for name in re.findall(r"`tri guide ([^`]+)`", text):
+                    self.assertIn(name, tri.GUIDE_NAMES)
 
     def test_cli_commands_in_skills_exist(self):
         cmds = subcommands(tri.build_parser())
@@ -62,32 +66,34 @@ class SkillTest(unittest.TestCase):
                             self.assertIn(sub, cmds[cmd])
 
 
-class HookTest(unittest.TestCase):
-    def test_hooks_schema(self):
-        data = json.loads((ROOT / "hooks/hooks.json").read_text(encoding="utf-8"))
-        self.assertEqual(set(data["hooks"]), {"SessionStart", "PostToolUse"})
-        for event, groups in data["hooks"].items():
+class ReadmeTest(unittest.TestCase):
+    text = (ROOT / "README.md").read_text(encoding="utf-8")
+
+    def test_readme_covers_usage(self):
+        for heading in ("## インストール", "## 初期化", "## 日常の使い方", "## 既存プロジェクトへの導入", "## 旧 Tri-SSD からの移行"):
+            self.assertIn(heading, self.text)
+        self.assertIn("python scripts/install.py", self.text)
+        self.assertNotRegex(self.text, r"/plugin (install|marketplace)")
+
+    def test_hook_registration_example(self):
+        block = next(b for b in re.findall(r"```json\n(.*?)```", self.text, re.S) if '"hooks"' in b)
+        hooks = json.loads(block)["hooks"]
+        self.assertEqual(set(hooks), {"SessionStart", "PostToolUse"})
+        cmds = subcommands(tri.build_parser())
+        for groups in hooks.values():
             for g in groups:
                 for h in g["hooks"]:
                     self.assertEqual(h["type"], "command")
-                    m = re.search(r"\$\{CLAUDE_PLUGIN_ROOT\}/(\S+?)\"? (\w+) --hook", h["command"])
+                    m = re.match(r"tri (\w+) --hook\b", h["command"])
                     self.assertIsNotNone(m, h["command"])
-                    self.assertTrue((ROOT / m.group(1)).exists())
-                    self.assertIn(m.group(2), subcommands(tri.build_parser()))
+                    self.assertIn(m.group(1), cmds)
 
 
 class ReleaseTest(unittest.TestCase):
     def test_versions_in_sync(self):
         plugin = json.loads((ROOT / ".claude-plugin/plugin.json").read_text(encoding="utf-8"))["version"]
-        market = json.loads((ROOT / ".claude-plugin/marketplace.json").read_text(encoding="utf-8"))["plugins"][0]["version"]
         changelog = re.search(r"^## \[(\d+\.\d+\.\d+)\]", (ROOT / "CHANGELOG.md").read_text(encoding="utf-8"), re.M).group(1)
-        self.assertEqual(plugin, market)
         self.assertEqual(plugin, changelog)
-
-    def test_readme_covers_usage(self):
-        text = (ROOT / "README.md").read_text(encoding="utf-8")
-        for heading in ("## インストール", "## 初期化", "## 日常の使い方", "## 既存プロジェクトへの導入", "## 旧 Tri-SSD からの移行"):
-            self.assertIn(heading, text)
 
 
 if __name__ == "__main__":

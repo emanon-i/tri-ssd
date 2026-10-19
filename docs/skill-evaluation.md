@@ -3,7 +3,7 @@ code: [evals/, skills/]
 ---
 # Skill の評価
 
-3 スキルについて、(1) 呼ぶべき依頼で呼ばれ、呼ぶべきでない依頼で呼ばれないか（発火）、(2) 呼ばれたときにプラグイン無しより良い結果を出すか（成果）を `claude plugin eval` で測る。
+3 スキルについて、(1) 呼ぶべき依頼で呼ばれ、呼ぶべきでない依頼で呼ばれないか（発火）、(2) 呼ばれたときに Skill 無しより良い結果を出すか（成果）を `claude plugin eval` で測る。
 
 ## 方法
 
@@ -26,7 +26,8 @@ code: [evals/, skills/]
 | 成果（held-out） | `evals/heldout-*` | スキルごとに 2 件。出力を見る前に採点基準を書いてコミットし、固定した |
 | 成果（dev） | `evals/` のその他 5 件 | 開発中に作ったケース。出力を見てから足した採点（`api-md-refers-not-duplicates`）を含むので、探索用として扱い、確証には使わない |
 
-- 実行: `claude plugin eval . --tag <trigger|heldout> --scaffold --allow-tools Bash Write Edit`。子セッションは既定のモデル（claude-sonnet-5-5）。Linux では Bash のサンドボックスに bubblewrap と socat が要る
+- 実行: 作業ツリーを `python scripts/install.py` で導入してから（Skill は PATH 上の `tri` を呼ぶ）、`claude plugin eval . --tag <trigger|heldout> --scaffold --allow-tools Bash Write Edit`。
+  `.claude-plugin/plugin.json` は評価のために Skill を束ねるだけのもの。子セッションは既定のモデル（claude-sonnet-5-5）。Linux では Bash のサンドボックスに bubblewrap と socat が要る
 - 採点はファイルの内容で行う（エージェントは Edit ではなく Bash で編集することも多いので、ツール呼び出しでは見ない）
 - `tri check` の終了コードは eval では採点できないので、作業ディレクトリを残し（`--keep-temp`）、あとから実行して数えた
 

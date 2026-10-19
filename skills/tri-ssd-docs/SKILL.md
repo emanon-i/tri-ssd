@@ -1,6 +1,6 @@
 ---
-description: Tri-SSD プロジェクト（docs/goal.md がある）の Goal と Docs（あるべき状態を定める文書）を作成・改訂する。古い記述を残さず置き換え、意味のある変更を CHANGELOG に記録し、参照切れ・履歴汚染・重複を CLI で検査する更新プロトコルを実行する。
-when_to_use: Tri-SSD プロジェクトで、仕様を書いて・設計を変えたい・仕様で決めた値・方式・方針を変えたい・方針が変わった・ドキュメントを更新して・ドキュメントを整理して・Goal を決めたい・要求を追加して・この判断を記録して・文書が古い・ドキュメントが肥大化している、と言われたとき。Task 完了時に Docs の見直しが必要なとき。英語では update the spec / revise docs / record decision。実装作業・作業メモ・引き継ぎは task を使う。docs/goal.md の無いリポジトリの文書更新には使わない（導入を頼まれたときだけ setup）。
+name: tri-ssd-docs
+description: Tri-SSD プロジェクト（docs/goal.md がある）の Goal と Docs（あるべき状態を定める文書）を作成・改訂する。古い記述を残さず置き換え、意味のある変更を CHANGELOG に記録し、参照切れ・履歴汚染・重複を CLI で検査する更新プロトコルを実行する。 Tri-SSD プロジェクトで、仕様を書いて・設計を変えたい・仕様で決めた値・方式・方針を変えたい・方針が変わった・ドキュメントを更新して・ドキュメントを整理して・Goal を決めたい・要求を追加して・この判断を記録して・文書が古い・ドキュメントが肥大化している、と言われたとき。Task 完了時に Docs の見直しが必要なとき。英語では update the spec / revise docs / record decision。実装作業・作業メモ・NOTES は tri-ssd-task を使う。docs/goal.md の無いリポジトリの文書更新には使わない（導入を頼まれたときだけ tri-ssd-setup）。
 argument-hint: "[変更内容 | 対象文書] - 何をどう変えるか"
 allowed-tools: Read, Edit, Write, Glob, Grep, Bash
 ---
@@ -8,9 +8,9 @@ allowed-tools: Read, Edit, Write, Glob, Grep, Bash
 # Goal・Docs を改訂する
 
 <tri_ssd_context>
-Tri-SSD: Goal（docs/goal.md）・Docs（docs/ のあるべき状態）・Tasks（docs/tasks/ 差分を解消する検証可能な作業。作業メモも Task の中）・引き継ぎ（docs/notes/handoff.md）・CHANGELOG（意味のある変更の履歴）。常に守る規則はエージェントが常に読む指示ファイル（CLAUDE.md・AGENTS.md）に置く。
-決定的処理は CLI `python3 "${CLAUDE_SKILL_DIR}/../../scripts/tri.py"`（以下 `tri`）で行う。`tri` はカレントディレクトリをプロジェクトとして扱うので、プロジェクトのルートでこの絶対パスのまま実行する（プラグインのディレクトリへ cd しない）。文書を開く前に `tri context` で必要なセクションだけを取得する。
-置き場・寿命の判断に迷ったら `${CLAUDE_SKILL_DIR}/../../docs/knowledge-model.md` を読むこと。
+Tri-SSD: Goal（docs/goal.md）・Docs（docs/ のあるべき状態）・Tasks（tasks/ 差分を解消する検証可能な作業。作業メモも Task の中）・NOTES（NOTES.md 現在位置・次にやること・未決事項）・CHANGELOG（意味のある変更の履歴）。常に守る規則はエージェントが常に読む指示ファイル（CLAUDE.md・AGENTS.md）に置く。
+決定的処理は PATH 上の CLI `tri` で行う。`tri` はカレントディレクトリをプロジェクトとして扱うので、プロジェクトのルートで実行する（Tri-SSD の導入先へ cd しない）。文書を開く前に `tri context` で必要なセクションだけを取得する。
+置き場・寿命の判断に迷ったら `tri guide knowledge-model` の出力を読むこと。
 </tri_ssd_context>
 
 <avoid_over_engineering>
@@ -23,20 +23,20 @@ Tri-SSD: Goal（docs/goal.md）・Docs（docs/ のあるべき状態）・Tasks�
 
 <current_state_only>
 Docs と Goal には現在または将来のあるべき状態だけを書く。変更するときは追記せず置き換え、古い記述・重複を同じ編集で消す。
-「当初は」「以前は」「〜に変更した」「現在は〜だが」のような経緯は本文に残さず、CHANGELOG（何を・なぜ）か ADR（判断の背景）へ書く。
+「当初は」「以前は」「〜に変更した」「現在は〜だが」のような経緯は本文に残さず、CHANGELOG（何を・なぜ）へ書く。選んだ理由と採らなかった案は、その文書の `## 選定理由と却下案` の節に書く。
 </current_state_only>
 
 - **1つの事実は1箇所**: 数値・期限・名前などの値は1箇所（通常は REQ）にだけ書き、他の文書は ID で参照する（「保持期間（REQ-0011）」）
 - **実装箇所はパスで名指しする**（`` `src/worker/trash.py` ``）。名指しされたコードは context の「関連コード」と impact に現れる
 
-書式（マーカー・frontmatter・AC）に迷ったときだけ `${CLAUDE_SKILL_DIR}/../../docs/writing-rules.md` を読む。
-文書の種類ごとの書き方とテンプレートは `${CLAUDE_SKILL_DIR}/references/doc-guide.md`（新しい文書を作るときだけ読む）。
+書式（マーカー・frontmatter・AC）に迷ったときだけ `tri guide writing-rules` の出力を読む。
+文書の種類ごとの書き方とテンプレートは この Skill のフォルダの `references/doc-guide.md`（新しい文書を作るときだけ読む）。
 
 ## 更新プロトコル
 
 1. **対象を特定する**: 変更する仕様の記述をすべて見つける。ID・見出しが分かれば `tri context <ID か docs/x.md#見出し> --emit`、分からなければ `tri context --query "変更する語（例: ゴミ箱 保持期間 30日）" --emit`
 2. **現実を確認する**: 関連コード（context の「関連コード」）と検証証跡を見て、変更が「Docs の誤りの修正」か「あるべき状態の変更」かを判断する
-3. **置き換える**: 該当箇所を新しいあるべき状態に書き換える。未実装の部分には `（計画: T-nnnn）`（Task が無ければ task スキルで作る）
+3. **置き換える**: 該当箇所を新しいあるべき状態に書き換える。未実装の部分には `（計画: T-nnnn）`（Task が無ければ tri-ssd-task スキルで作る）
 4. **除去する**: 古い説明・同じ事実の別表現・不要になった節を消す。他の文書に同じ事実があれば正を1箇所にして参照に置き換える
 5. **記録する**: 意味が変わる変更なら `tri log Changed "何を・なぜ" --refs T-xxxx`（文言修正だけなら不要）。`[Unreleased]` の未リリースの記録は最新の内容に直してよい。リリース済みの記録は書き換えない
 6. **検査する**: `tri check --changed`。PostToolUse フックが編集直後に指摘を返すこともある
@@ -47,9 +47,9 @@ Docs と Goal には現在または将来のあるべき状態だけを書く。
 
 ## 仕様変更と実装を一緒に頼まれたとき
 
-1. task スキルで Task を先に作る（`tri task new "題" --refs <ID> --slug <英数の名前>`）
+1. tri-ssd-task スキルで Task を先に作る（`tri task new "題" --refs <ID> --slug <英数の名前>`）
 2. この更新プロトコルで Docs を新しい状態に置き換える。同じセッションで実装まで終えるなら `（計画: T-nnnn）` は付けなくてよい
-3. task スキルの手順で実装・検証・完了する
+3. tri-ssd-task スキルの手順で実装・検証・完了する
 
 ## Goal を書く・直すとき
 
@@ -67,7 +67,7 @@ Docs と Goal には現在または将来のあるべき状態だけを書く。
 
 - 変更した文書とセクション、CHANGELOG に記録した内容
 - `tri check --changed` の結果（エラー 0 を確認）
-- 作成・更新した `（計画: T-nnnn）` と、対応する Task（未作成なら task スキルを案内）
+- 作成・更新した `（計画: T-nnnn）` と、対応する Task（未作成なら tri-ssd-task スキルを案内）
 
 ## エラーケース
 

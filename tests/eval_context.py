@@ -40,7 +40,7 @@ CASES = [
                      "docs/api.md#get-search", "docs/api.md#get-tagssuggest", "docs/data.md#tag",
                      "docs/security.md#認可"],  # 横断制約: 全クエリを利用者 ID で絞る
         "acceptable": ["docs/goal.md*", "docs/search.md*", "docs/architecture.md*", "docs/requirements.md#要求",
-                       "docs/notes/handoff.md*", "docs/api.md#http-api", "docs/api.md#検索", "docs/ui.md#検索の操作",
+                       "NOTES.md*", "docs/api.md#http-api", "docs/api.md#検索", "docs/ui.md#検索の操作",
                        "docs/data.md#概念モデル", "docs/data.md#データ設計"],
     },
     {
@@ -49,7 +49,7 @@ CASES = [
                      "docs/data.md#bookmark",          # 重複判定は正規化後の URL
                      "docs/security.md#入力の扱い"],   # 横断制約: javascript: URL を捨てる
         "acceptable": ["docs/goal.md*", "docs/architecture.md*", "docs/api.md#http-api", "docs/api.md#入出力",
-                       "docs/requirements.md#要求", "docs/notes/handoff.md*", "docs/data.md#整合性",
+                       "docs/requirements.md#要求", "NOTES.md*", "docs/data.md#整合性",
                        f"{REQ}0002-タグ付け"],
     },
     {
@@ -140,7 +140,7 @@ def growth(cycles: int = 40) -> list[dict]:
 
 
 def table(results: list[dict]) -> str:
-    lines = ["| ケース | 内容 | 全文（Goal+Docs / +Task・引き継ぎ） | context | 削減 | 取得率 | 混入率 | 欠落（未選定の必要情報） |",
+    lines = ["| ケース | 内容 | 全文（Goal+Docs / +Task・NOTES.md） | context | 削減 | 取得率 | 混入率 | 欠落（未選定の必要情報） |",
              "|---|---|---|---|---|---|---|---|"]
     for r in results:
         missed = "・".join(f"`{m}`" + ("（弱い候補に列挙）" if m in r["weak"] else "") for m in r["missed"]) or "なし"
@@ -150,7 +150,7 @@ def table(results: list[dict]) -> str:
 
 
 def growth_table(rows: list[dict]) -> str:
-    lines = ["| サイクル | Goal+Docs | context（最新 Task） | 検査エラー | 一時情報（引き継ぎ＋メモ） |", "|---|---|---|---|---|"]
+    lines = ["| サイクル | Goal+Docs | context（最新 Task） | 検査エラー | 一時情報（NOTES.md＋メモ） |", "|---|---|---|---|---|"]
     for r in rows:
         lines.append(f"| {r['cycle']} | {r['docs_tokens']} | {r['context_tokens']} | {r['errors']} | {r['notes_tokens']} |")
     return "\n".join(lines)

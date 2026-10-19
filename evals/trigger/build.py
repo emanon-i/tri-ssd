@@ -28,7 +28,7 @@ def case_yaml(q: dict) -> str:
             f"  - name: {'fires' if expected else 'not'}-{s}\n"
             "    type: tool_used\n"
             "    tool: Skill\n"
-            f"    input_match: '\"skill\"\\s*:\\s*\"(?:tri-ssd:)?{s}\"'\n"
+            f"    input_match: '\"skill\"\\s*:\\s*\"(?:tri-ssd:)?tri-ssd-{s}\"'\n"
             + ("" if expected else "    min: 0\n    max: 0\n"))
     prompt = "\n".join("    " + line for line in q["query"].splitlines())
     return (

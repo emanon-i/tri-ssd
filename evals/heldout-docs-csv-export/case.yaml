@@ -18,7 +18,7 @@ graders:
     pattern: 'CSV'
   - name: task-for-implementation
     type: file_exists
-    path: 'docs/tasks/T-*.md'
+    path: 'tasks/T-*.md'
   - name: no-history-in-req
     type: regex
     target: { source: file, path: docs/requirements.md }

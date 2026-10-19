@@ -16,7 +16,7 @@ graders:
   - name: no-tri-skill
     type: tool_used
     tool: Skill
-    input_match: '"skill"\s*:\s*"(?:tri-ssd:)?(?:setup|task|docs)"'
+    input_match: '"skill"\s*:\s*"(?:tri-ssd:)?tri-ssd-(?:setup|task|docs)"'
     min: 0
     max: 0
     arm: both

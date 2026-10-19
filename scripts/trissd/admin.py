@@ -1,12 +1,13 @@
-"""初期化・状況表示・差分マーカー一覧・CHANGELOG 追記・旧 Tri-SSD からの移行。"""
+"""初期化・状況表示・差分マーカー一覧・CHANGELOG 追記・旧い配置からの移行。"""
 from __future__ import annotations
 
+import posixpath
 import re
 import shutil
 from pathlib import Path
 
 from . import md, notes, tasks
-from .project import CHANGELOG, DONE, GOAL, MARKER_RE, NOTES, TASKS, Project
+from .project import CHANGELOG, DOCS, DONE, GOAL, MARKER_RE, NOTES, TASKS, Project
 
 TEMPLATES = Path(__file__).resolve().parents[2] / "templates"
 
@@ -22,29 +23,22 @@ CHANGE_TYPES = ("Added", "Changed", "Deprecated", "Removed", "Fixed", "Security"
 
 
 def init(root: Path, name: str | None = None) -> list[str]:
+    """Goal と CHANGELOG だけを作る。tasks/ と NOTES.md は最初に使うときに作られる。"""
     created = []
-    for d in (TASKS, NOTES):
-        path = root / d
-        if not path.exists():
-            path.mkdir(parents=True)
-            (path / ".gitkeep").touch()
-            created.append(d + "/")
     goal = root / GOAL
     if not goal.exists():
+        goal.parent.mkdir(parents=True, exist_ok=True)
         goal.write_text(template("goal.md", name=name or root.resolve().name), encoding="utf-8")
         created.append(GOAL)
     cl = root / CHANGELOG
     if not cl.exists():
         cl.write_text(template("changelog.md"), encoding="utf-8")
         created.append(CHANGELOG)
-    if not (root / ".tri-ssd" / ".gitignore").exists():
-        notes.ensure_local(root)
-        created.append(".tri-ssd/（git 管理外）")
     return created
 
 
 def is_project(root: Path) -> bool:
-    return (root / GOAL).exists() or (root / TASKS).is_dir()
+    return (root / GOAL).exists()
 
 
 def marker_list(p: Project) -> list[tuple[str, str, int, str, str]]:
@@ -68,7 +62,7 @@ def untracked_reqs(p: Project) -> list[str]:
     return sorted(i for i in p.defs if i.startswith("REQ-") and i not in referenced)
 
 
-def status(p: Project, script: str, hook: bool = False) -> str:
+def status(p: Project, hook: bool = False) -> str:
     from .check import run as run_check
     out = []
     goal = p.docs.get(GOAL)
@@ -86,12 +80,13 @@ def status(p: Project, script: str, hook: bool = False) -> str:
         ok, n, stale = tasks.progress(d, fp)
         flag = f" stale {stale}" if stale else ""
         out.append(f"  {d.fm.get('id')} [{d.fm.get('status')}] AC {ok}/{n}{flag}  {tasks.title_of(d)}")
-    for path, text in notes.read_handoff(p):
+    text = notes.read(p)
+    if text:
         lines = text.strip().splitlines()
-        out.append(f"引き継ぎ（{path}）:")
+        out.append(f"{NOTES}:")
         out += ["  " + x for x in lines[1:31] if x.strip()]
         if len(lines) > 31:
-            out.append(f"  …（残り {len(lines) - 31} 行は {path}）")
+            out.append(f"  …（残り {len(lines) - 31} 行は {NOTES}）")
     issues = run_check(p)
     errs = sum(1 for i in issues if i.level == "error")
     out.append(f"Check: エラー {errs} / 警告 {len(issues) - errs}" + ("（tri check で詳細）" if issues else ""))
@@ -101,7 +96,7 @@ def status(p: Project, script: str, hook: bool = False) -> str:
         for k, *_ in mk:
             c[k] = c.get(k, 0) + 1
         out.append("差分マーカー: " + " / ".join(f"{k} {v}" for k, v in c.items()) + "（tri gaps で一覧）")
-    out.append(f"CLI: python3 {script} <command>（context <Task-ID> --emit で作業に必要な文脈を取得）")
+    out.append("CLI: tri <command>（context <Task-ID> --emit で作業に必要な文脈を取得）")
     return "\n".join(out)
 
 
@@ -144,7 +139,115 @@ def log(root: Path, kind: str, text: str, refs: list[str]) -> str:
     return entry
 
 
-# --- 旧 Tri-SSD（v5 以前: L0-L3）からの移行 ----------------------------------------------
+# --- 旧い配置からの移行 -------------------------------------------------------------------
+# v5 以前（L0-L3）は、いったん v6 の配置（docs/tasks・docs/notes）に移してから、今の配置へ移す。
+
+LEGACY_TASKS = "docs/tasks"
+LEGACY_DONE = "docs/tasks/_done"
+LEGACY_NOTES = "docs/notes"
+LEGACY_LOCAL = ".tri-ssd"
+LINK_RE = re.compile(r"(\]\()([^)\s#]+)((?:#[^)\s]*)?\))")
+LAYOUT_REWRITES = [("docs/tasks/_done/", "tasks/archive/"), ("docs/tasks/", "tasks/"), ("docs/notes/handoff.md", "NOTES.md")]
+
+
+def migrate(root: Path, apply: bool = False) -> list[str]:
+    v5 = _migrate_v5(root, apply)
+    if v5 is not None and not apply:
+        return (["（ドライラン。--apply で実行）"] + v5 +
+                ["続けて今の配置へ移す: docs/tasks/ → tasks/（_done/ → archive/）・docs/notes/ → tmp/notes/"])
+    layout = _migrate_layout(root, apply)
+    if v5 is None and not layout:
+        return ["旧い配置（docs/l1_requirements・docs/tasks・docs/notes・.tri-ssd）が見つかりません。移行は不要です"]
+    report = (v5 or []) + layout
+    if not apply:
+        return ["（ドライラン。--apply で実行）"] + report
+    return report + init(root)
+
+
+def _relink(text: str, old_rel: str, new_rel: str, moves: dict[str, str]) -> str:
+    """相対リンクを、移動前の位置で解決し、移動後の位置からの相対パスに書き直す。"""
+    def sub(m):
+        target = m.group(2)
+        if re.match(r"[a-zA-Z][a-zA-Z0-9+.-]*:", target) or target.startswith("/"):
+            return m.group(0)
+        old_target = posixpath.normpath(posixpath.join(posixpath.dirname(old_rel), target))
+        if old_rel == new_rel and old_target not in moves:
+            return m.group(0)
+        new_target = moves.get(old_target, old_target)
+        return m.group(1) + posixpath.relpath(new_target, posixpath.dirname(new_rel) or ".") + m.group(3)
+    return LINK_RE.sub(sub, text)
+
+
+def _migrate_layout(root: Path, apply: bool) -> list[str]:
+    """v6 の配置（docs/tasks・docs/notes・.tri-ssd）を今の配置（tasks・NOTES.md）へ移す。"""
+    moves: dict[str, str] = {}
+    for base, dest in ((LEGACY_TASKS, TASKS), (LEGACY_NOTES, "tmp/notes")):
+        d = root / base
+        if not d.is_dir():
+            continue
+        for f in sorted(x for x in d.rglob("*") if x.is_file() and x.name != ".gitkeep"):
+            rel = f.relative_to(d).as_posix()
+            if base == LEGACY_TASKS and rel.startswith("_done/"):
+                target = DONE + "/" + rel[len("_done/"):]
+            elif base == LEGACY_NOTES and rel == "handoff.md":
+                target = NOTES
+            else:
+                target = dest + "/" + rel
+            moves[f.relative_to(root).as_posix()] = target
+    local = root / LEGACY_LOCAL
+    local_files = [x for x in local.rglob("*") if x.is_file() and x.name != ".gitignore"] if local.is_dir() else []
+    report = [f"移動: {a} → {b}" + ("（Tri-SSD は読まない。見直して Task・Docs にするか削除する）" if b.startswith("tmp/") else "")
+              for a, b in moves.items()]
+    if local.is_dir():
+        report.append(f"残す: {LEGACY_LOCAL}/ に {len(local_files)} 件。NOTES.md へ移すか削除する（Tri-SSD は読まない）"
+                      if local_files else f"削除: {LEGACY_LOCAL}/（中身が無い）")
+    if moves:
+        report.append("書き換え: 相対リンクと、docs/tasks/・docs/notes/handoff.md への言及")
+    clash = [b for b in moves.values() if (root / b).exists()]
+    if clash:
+        raise SystemExit(f"error: 移動先が既にあります: {', '.join(clash)}")
+    if not apply or not report:
+        return report
+
+    texts = {}
+    for f in sorted((root / DOCS).rglob("*.md")) if (root / DOCS).is_dir() else []:
+        texts[f.relative_to(root).as_posix()] = f.read_text(encoding="utf-8")
+    for a, b in moves.items():
+        (root / b).parent.mkdir(parents=True, exist_ok=True)
+        shutil.move(str(root / a), str(root / b))
+    for old_rel, text in texts.items():
+        new_rel = moves.get(old_rel, old_rel)
+        if not new_rel.endswith(".md"):
+            continue
+        new = _relink(text, old_rel, new_rel, moves)
+        if not new_rel.startswith(DONE + "/"):  # 完了 Task は履歴。言及は書き換えない
+            for a, b in LAYOUT_REWRITES:
+                new = new.replace(a, b)
+        if new_rel == NOTES:
+            new = re.sub(r"\A# 引き継ぎ", "# NOTES", new)
+        if new != text or new_rel != old_rel:
+            with open(root / new_rel, "w", encoding="utf-8", newline="\n") as f:
+                f.write(new)
+    for base in (LEGACY_TASKS, LEGACY_NOTES):
+        _remove_empty(root / base)
+    if local.is_dir() and not local_files:
+        shutil.rmtree(local)
+    return report
+
+
+def _remove_empty(d: Path) -> None:
+    if not d.is_dir():
+        return
+    for g in d.rglob(".gitkeep"):
+        g.unlink()
+    for x in sorted((x for x in d.rglob("*") if x.is_dir()), key=lambda x: -len(x.parts)):
+        if not any(x.iterdir()):
+            x.rmdir()
+    if not any(d.iterdir()):
+        d.rmdir()
+
+
+# v5 以前（L0-L3）→ v6 の配置
 
 PATH_REWRITES = [
     ("l1_requirements/vision.md", "goal.md"),
@@ -161,12 +264,12 @@ MARKER_REWRITES = [
 STATUS_MAP = {"planned": "open", "in_progress": "active", "done": "done"}
 
 
-def migrate(root: Path, apply: bool = False) -> list[str]:
+def _migrate_v5(root: Path, apply: bool) -> list[str] | None:
     docs = root / "docs"
     plan: list[tuple[str, Path, Path | None]] = []   # (操作, 元, 先)
     l1, l2, l3, l0 = (docs / "l1_requirements", docs / "l2_foundation", docs / "l3_phases", docs / "l0_ideas")
     if not any(d.exists() for d in (l1, l2, l3, l0)):
-        return ["旧 Tri-SSD の構造（docs/l1_requirements 等）が見つかりません。移行は不要です"]
+        return None
     if (l1 / "vision.md").exists():
         plan.append(("move", l1 / "vision.md", docs / "goal.md"))
     for base, dest in ((l1, docs), (l2, docs / "design"), (l0, docs / "notes" / "ideas")):
@@ -195,14 +298,14 @@ def migrate(root: Path, apply: bool = False) -> list[str]:
     report = []
     for op, src, dst in plan:
         if op == "move":
-            report.append(f"移動: {src.relative_to(root)} → {dst.relative_to(root)}")
+            report.append(f"移動: {src.relative_to(root).as_posix()} → {dst.relative_to(root).as_posix()}")
         elif op == "delete":
-            report.append(f"削除: {src.relative_to(root)}（旧在り処マップ）")
+            report.append(f"削除: {src.relative_to(root).as_posix()}（旧在り処マップ）")
         else:
-            report.append(f"Task 化: {src.relative_to(root)} → docs/tasks/（status 変換・完了済みは _done/）")
+            report.append(f"Task 化: {src.relative_to(root).as_posix()} → docs/tasks/（status 変換・完了済みは _done/）")
     report.append("書き換え: パス参照（l1_requirements→goal.md 等）・旧マーカー（TODO: 要確認→（未確定）、（未確認…）→（未検証））")
     if not apply:
-        return ["（ドライラン。--apply で実行）"] + report
+        return report
 
     for op, src, dst in plan:
         if op == "move":
@@ -232,7 +335,6 @@ def migrate(root: Path, apply: bool = False) -> list[str]:
             new = pat.sub(rep, new)
         if new != text:
             f.write_text(new, encoding="utf-8")
-    report += init(root)
     return report
 
 
@@ -263,7 +365,7 @@ def _migrate_phase(root: Path, src: Path, merge: bool):
     if archived:
         st = "done"
     text = md.set_fm_value(text, "status", st)
-    dest_dir = root / (DONE if st == "done" else TASKS)
+    dest_dir = root / (LEGACY_DONE if st == "done" else LEGACY_TASKS)
     dest_dir.mkdir(parents=True, exist_ok=True)
     (dest_dir / name).write_text(text, encoding="utf-8")
     if src.is_dir():

@@ -18,7 +18,7 @@ graders:
   - name: skill-docs-fired
     type: tool_used
     tool: Skill
-    input_match: '"skill"\s*:\s*"(?:tri-ssd:)?docs"'
+    input_match: '"skill"\s*:\s*"(?:tri-ssd:)?tri-ssd-docs"'
   - name: no-cd-into-plugin
     # tri はカレントディレクトリのプロジェクトを扱う。プラグインのディレクトリへ cd すると別のプロジェクトを操作してしまう
     type: tool_used
@@ -50,7 +50,7 @@ graders:
     match: not_contains
   - name: active-task-ac-replaced
     type: regex
-    target: { source: file, path: docs/tasks/T-0005-tag-search.md }
+    target: { source: file, path: tasks/T-0005-tag-search.md }
     pattern: '最大 10 件'
     match: not_contains
   - name: no-history-in-search-md
