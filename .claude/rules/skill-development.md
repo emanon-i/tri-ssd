@@ -26,7 +26,15 @@ allowed-tools: Read, Write, Edit, Glob, Grep  # 事前承認するツールの�
 
 ## XML タグによる強指示
 
-逸脱してほしくない制約・思考手順は XML タグのブロック（`<tri_ssd_context>
+逸脱してほしくない制約・思考手順は XML タグのブロック（`<tri_ssd_context>` `<avoid_over_engineering>` `<thinking_process>` 等）で囲む。タグで囲まれた指示は LLM が優先的に遵守する。通常の説明・手順は Markdown のまま書く（何でも囲むとタグの効果が薄れる）。
+なお**生成されるドキュメント側**では XML タグを使わない（人間可読性優先。記載規約は `docs/writing-rules.md` が正）。
+
+## 共通コンテキストブロック
+
+すべてのスキルに含める（規定文面のまま。`tests/test_skills.py` が全スキルでの一致を検査する）:
+
+```markdown
+<tri_ssd_context>
 Tri-SSD: Goal（docs/goal.md）・Docs（docs/ のあるべき状態）・Tasks（docs/tasks/ 差分を解消する検証可能な作業。作業メモも Task の中）・引き継ぎ（docs/notes/handoff.md）・CHANGELOG（意味のある変更の履歴）。常に守る規則はエージェントが常に読む指示ファイル（CLAUDE.md・AGENTS.md）に置く。
 決定的処理は PATH 上の CLI `tri` で行う。`tri` はカレントディレクトリをプロジェクトとして扱うので、プロジェクトのルートで実行する（Tri-SSD の導入先へ cd しない）。文書を開く前に `tri context` で必要なセクションだけを取得する。
 置き場・寿命の判断に迷ったら `tri guide knowledge-model` の出力を読むこと。

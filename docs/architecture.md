@@ -150,4 +150,5 @@ REQ-0010 を実現する。`python scripts/install.py` が、リポジトリか�
 - 単体・結合テストは標準ライブラリの unittest（`tests/`）。フィクスチャは `tests/fixtures/`
 - 長期運用は `tests/simulate.py` が操作列を決定的に再現し、健全性の不変条件を `tests/test_simulation.py` が検証する
 - コンテキスト効率は `tests/eval_context.py` が実測する。結果は [評価](evaluation.md)
-- Skill は `claude plugin eval` で評価する。`.claude-plugin/plugin.json` は評価のために Skill を束ねるだけで、導入には使わない。Skill が呼ぶ `tri` は PATH 上のものなので、評価の前に作業ツリーを `scripts/install.py` で導入する。発火は `evals/trigger/` の依頼で振り分けを測り、成果は `evals/heldout-*` でプラグイン無しと比べる（有料の実エージェント実行なので CI では回さない）。結果は [Skill の評価](skill-evaluation.md)
+- Skill は `claude plugin eval` で評価する。`.claude-plugin/plugin.json` は評価のために Skill を束ねるだけで、導入には使わない。Skill が呼ぶ `tri` は PATH 上のものなので、評価の前に作業ツリーを `scripts/install.py` で導入する。
+  発火は `evals/trigger/` の依頼で振り分けを測り、成果は `evals/heldout-*` でプラグイン無しと比べる（有料の実エージェント実行なので CI では回さない）。結果は [Skill の評価](skill-evaluation.md)

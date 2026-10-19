@@ -16,11 +16,13 @@ Claude Code のプラグインをやめ、Claude Code・Codex・Pi・OpenCode �
 
 ### Changed
 
-- 配布をプラグインから、共有 Skill と PATH 上の CLI `tri` に変えた。Claude Code・Codex・Pi・OpenCode が1つの正本から同じ版を使うため（ADR-0003）。Skill は `tri-ssd-setup`・`tri-ssd-task`・`tri-ssd-docs` に改名し、Agent Skills の形式（`name`・`when_to_use` を含めた `description`）にした。Skill は置換変数を使わず `tri` と `tri guide` を呼ぶ（T-0017）
+- 配布をプラグインから、共有 Skill と PATH 上の CLI `tri` に変えた。Claude Code・Codex・Pi・OpenCode が1つの正本から同じ版を使うため（ADR-0003）。
+  Skill は `tri-ssd-setup`・`tri-ssd-task`・`tri-ssd-docs` に改名し、Agent Skills の形式（`name`・`when_to_use` を含めた `description`）にした。Skill は置換変数を使わず `tri` と `tri guide` を呼ぶ（T-0017）
 
 ### Removed
 
-- `.claude-plugin/marketplace.json` と `hooks/hooks.json`。Claude Code のフックは利用者の `~/.claude/settings.json` に `tri status --hook`・`tri check --hook` として登録する（README）。`plugin.json` は `claude plugin eval` で Skill を束ねるためだけに残す（T-0017）
+- `.claude-plugin/marketplace.json` と `hooks/hooks.json`。Claude Code のフックは利用者の `~/.claude/settings.json` に `tri status --hook`・`tri check --hook` として登録する（README）。
+  `plugin.json` は `claude plugin eval` で Skill を束ねるためだけに残す（T-0017）
 
 ### Fixed
 
