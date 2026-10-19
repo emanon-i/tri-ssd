@@ -47,13 +47,12 @@ def _write_shims(bin_dir: Path, prefix: Path, python: str) -> list[Path]:
     bin_dir.mkdir(parents=True, exist_ok=True)
     entry = prefix / "scripts" / "tri.py"
     sh = bin_dir / "tri"
-    sh.write_text(f'#!/bin/sh\nexec "{Path(python).as_posix()}" "{entry.as_posix()}" "$@"\n',
-                  encoding="utf-8", newline="\n")
+    sh.write_bytes(f'#!/bin/sh\nexec "{Path(python).as_posix()}" "{entry.as_posix()}" "$@"\n'.encode("utf-8"))
     sh.chmod(0o755)
     shims = [sh]
     if os.name == "nt":
         cmd = bin_dir / "tri.cmd"
-        cmd.write_text(f'@echo off\r\n"{python}" "{entry}" %*\r\nexit /b %ERRORLEVEL%\r\n', encoding="oem")
+        cmd.write_bytes(f'@echo off\r\n"{python}" "{entry}" %*\r\nexit /b %ERRORLEVEL%\r\n'.encode("oem"))
         shims.append(cmd)
     return shims
 
