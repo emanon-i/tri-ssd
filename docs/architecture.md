@@ -7,8 +7,8 @@ code: [scripts/, skills/, hooks/]
 
 ```mermaid
 flowchart LR
-    Skill[Skills<br>操作インターフェース] --> CLI[scripts/tri.py]
-    Hook[hooks/hooks.json] --> CLI
+    Skill[Skills<br>操作インターフェース] --> CLI[tri<br>scripts/tri.py]
+    Hook[Claude Code のフック<br>settings.json] --> CLI
     CLI --> Project[project.py<br>知識グラフ]
     Project --> MD[md.py<br>Markdown 解析]
     CLI --> Resolve[resolve.py<br>context / impact]
@@ -22,14 +22,15 @@ flowchart LR
 
 | 要素 | 責務 | 実装 |
 |---|---|---|
-| Skills | エージェントへの手順（いつ・どのコマンドを使い・何を判断するか） | `skills/` |
-| CLI | 決定的処理の入口。Python 3.9+ の標準ライブラリのみ（REQ-0009） | `scripts/tri.py` |
+| Skills | エージェントへの手順（いつ・どのコマンドを使い・何を判断するか）。Agent Skills の形式で、特定のエージェントの置換変数を使わない（計画: T-0017） | `skills/` |
+| CLI | 決定的処理の入口。PATH 上の `tri` で呼ぶ。Python 3.9+ の標準ライブラリのみ（REQ-0009） | `scripts/tri.py` |
 | 知識グラフ | 文書の分類・セクション・ID 定義・エッジを毎回元データから導出する。索引ファイル・キャッシュは持たない | `scripts/trissd/project.py` |
 | Markdown 解析 | frontmatter・見出し・ID・リンク・コードパス・トークン推定 | `scripts/trissd/md.py` |
 | テンプレート | Goal・Task・CHANGELOG の雛形。書式の正（CLI はこれを写すだけ） | `templates/` |
-| Hooks | セッション開始時の状況注入と、Docs 編集直後の検査 | `hooks/hooks.json` |
+| Hooks | Claude Code でのセッション開始時の状況注入と、Docs 編集直後の検査。利用者の `~/.claude/settings.json` に登録する（計画: T-0017） | `hooks/hooks.json` |
+| 導入 | CLI・Skill を同じ版で配る（[配布](#配布)） | `scripts/install.py` |
 
-Skills は [知識モデル](knowledge-model.md) と [記載規約](writing-rules.md) を参照し、規約を複製しない。
+Skills は [知識モデル](knowledge-model.md) と [記載規約](writing-rules.md) を `tri guide <名前>` の出力で読み、規約を複製しない。（計画: T-0017）
 
 ## 知識グラフ
 
@@ -115,16 +116,38 @@ ID の定義: Task は frontmatter `id`、REQ は Goal・Docs の見出しの先
 
 ## フック
 
+Claude Code のフックとして、利用者の `~/.claude/settings.json` に登録する（登録する内容は README の「インストール」）。（計画: T-0017）
+
 | イベント | 処理 |
 |---|---|
-| SessionStart（startup・resume・clear・compact） | `status --hook`: Tri-SSD プロジェクトなら状況を出力し文脈に入れる（REQ-0007）。そうでなければ何も出さない |
-| PostToolUse（Edit・Write・MultiEdit） | `check --hook`: 編集した `docs/` の文書に関する指摘だけを `additionalContext` で返す |
+| SessionStart（startup・resume・clear・compact） | `tri status --hook`: Tri-SSD プロジェクトなら状況を出力し文脈に入れる（REQ-0007）。そうでなければ何も出さない |
+| PostToolUse（Edit・Write・MultiEdit） | `tri check --hook`: 編集した `docs/` の文書に関する指摘だけを `additionalContext` で返す |
 
-フックは `python3`、次に `python` で実行し、どちらも無ければ何もしない（Skill の手順だけで全機能が使える。フックは自動化の保険）。
+フックはすべてのプロジェクトで発火する。Tri-SSD プロジェクト以外と、`tri` が見つからない環境では何もしない（Skill の手順だけで全機能が使える。フックは自動化の保険）。
+フックの無いエージェント（Codex・Pi・OpenCode）は、task スキルの手順 1 で `tri status` を実行して同じ状況を得る。
+
+## 配布
+
+REQ-0010 を実現する。`python scripts/install.py` が、リポジトリから CLI と Skill の写しを作る。リンクは作らない。（計画: T-0017）
+
+| 置き場（オプション・既定） | 中身 |
+|---|---|
+| `--prefix`（`~/.local/share/tri-ssd`） | CLI の実行一式: `scripts/tri.py`・`scripts/trissd/`・`templates/`・`docs/knowledge-model.md`・`docs/writing-rules.md` |
+| `--bin`（`~/.local/bin`） | 起動スクリプト `tri`（sh）。Windows では `tri.cmd` も置く。どちらも導入に使った Python の絶対パスで `<prefix>/scripts/tri.py` を起動する |
+| `--skills`（`~/.agents/skills`。複数指定できる） | `tri-ssd-setup`・`tri-ssd-task`・`tri-ssd-docs`（`skills/` の写し） |
+
+- `--bin` は PATH の通ったフォルダを指定する。PATH に無ければ導入時に警告する
+- 置いたファイルの一覧を `<prefix>/install.json` に記録し、次の導入で一覧から消えたものを削除する。何度実行しても同じ状態になる
+- 起動スクリプトが Python の絶対パスを持つので、`python3` と `python` のどちらが使えるかに依存しない
+
+| エージェント | Skill を読む場所 |
+|---|---|
+| Codex・Pi・OpenCode | `~/.agents/skills` |
+| Claude Code | `~/.claude/skills`。`--skills ~/.claude/skills` でもう1つ写すか、`~/.agents/skills` へのリンクを張る（リンクは利用者の環境の管理） |
 
 ## テスト戦略
 
 - 単体・結合テストは標準ライブラリの unittest（`tests/`）。フィクスチャは `tests/fixtures/`
 - 長期運用は `tests/simulate.py` が操作列を決定的に再現し、健全性の不変条件を `tests/test_simulation.py` が検証する
 - コンテキスト効率は `tests/eval_context.py` が実測する。結果は [評価](evaluation.md)
-- Skill は `claude plugin eval` で評価する。発火は `evals/trigger/` の依頼で振り分けを測り、成果は `evals/heldout-*` でプラグイン無しと比べる（有料の実エージェント実行なので CI では回さない）。結果は [Skill の評価](skill-evaluation.md)
+- Skill は `claude plugin eval` で評価する。`.claude-plugin/plugin.json` は評価のために Skill を束ねるだけで、導入には使わない。Skill が呼ぶ `tri` は PATH 上のものなので、評価の前に作業ツリーを `scripts/install.py` で導入する（計画: T-0017）。発火は `evals/trigger/` の依頼で振り分けを測り、成果は `evals/heldout-*` でプラグイン無しと比べる（有料の実エージェント実行なので CI では回さない）。結果は [Skill の評価](skill-evaluation.md)
