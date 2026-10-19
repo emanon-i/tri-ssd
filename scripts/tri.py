@@ -75,7 +75,7 @@ def cmd_context(a):
     p = Project(a.root)
     r = resolve.context(p, a.seeds, a.budget, a.query, not a.no_goal, min_include=a.min_score)
     ms = (time.perf_counter() - t0) * 1000
-    print(f"# context: {' '.join(a.seeds) or a.query}（使用 {r.used} / 予算 {r.budget or '無制限'} トークン。"
+    print(f"# context: {' '.join(a.seeds) or a.query or '起点なし（Goal だけ）'}（使用 {r.used} / 予算 {r.budget or '無制限'} トークン。"
           f"Goal+Docs 全文は約 {r.full_tokens}。{ms:.0f}ms）")
     for w in r.warnings:
         print(f"⚠️  {w}")

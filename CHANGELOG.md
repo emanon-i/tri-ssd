@@ -32,6 +32,7 @@ Claude Code のプラグインをやめ、Claude Code・Codex・Pi・OpenCode �
 ### Fixed
 
 - Windows（cp932）で標準入力に日本語を渡すと落ちる不具合を直した（`tri notes -` など）。標準入力も UTF-8 で読み、git と検証コマンドの出力も UTF-8 で読む（読めないバイトは置き換える）。フックの JSON の日本語のパスも正しく読む。migrate の報告のパス区切りを / にそろえた（T-0016）
+- 起点を付けずに `tri context` を呼ぶと見出しに `None` と出ていた。「起点なし（Goal だけ）」と表示する（T-0018）
 
 ## [6.0.2] - 2026-10-17
 

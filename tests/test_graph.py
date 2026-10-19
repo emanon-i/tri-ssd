@@ -47,6 +47,11 @@ class ContextTest(ProjectCase):
     def files(self, r):
         return {i.key.split("#")[0] for i in r.selected}
 
+    def test_without_seed_header_names_goal_only(self):
+        code, out = self.tri("context", "--emit")
+        self.assertEqual(code, 0)
+        self.assertTrue(out.startswith("# context: 起点なし（Goal だけ）"), out.splitlines()[0])
+
     def test_relevant_selected_and_irrelevant_excluded(self):
         r = resolve.context(self.project(), ["T-0005"])
         k = self.keys(r)
